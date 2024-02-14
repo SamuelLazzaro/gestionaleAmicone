@@ -1,0 +1,8 @@
+build/
+dist/
+Lib/
+Scripts/
+Include/
+.xls
+.xlsx
+.exe
