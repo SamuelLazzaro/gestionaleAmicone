@@ -5,12 +5,13 @@ import datetime
 import os
 import re
 
-from companiesFunction import readFromCattolica, readFromGenerali, findFilesNotChecked
+from companiesFunction import readFromCattolica, readFromGenerali, readFromTutela, findFilesNotChecked
 
 current_working_directory = os.getcwd()
 
 partialDir_filesGENERALI    = r'\PARTITE REGISTRATE PER CONTABILITA\GENERALI\PARTITE REGISTRATE\FEBBRAIO 2024'
 partialDir_filesCATTOLICA   = r'\PARTITE REGISTRATE PER CONTABILITA\CATTOLICA\PARTITE REGISTRATE\FEBBRAIO 2024'
+partialDir_filesTUTELA      = r'\PARTITE REGISTRATE PER CONTABILITA\TUTELA\PARTITE REGISTRATE\FEBBRAIO 2024'
 
 print("Percorso attuale: ", current_working_directory)
 
@@ -19,7 +20,7 @@ print("Percorso attuale: ", current_working_directory)
 finalFileName = 'PRIMA_NOTA_TEST_.xlsx'
 finalPathName = current_working_directory + '\\' + finalFileName
 
-fileToManage = input("\nScegliere la compagnia di cui effettuare la copia dei dati.\n1. GENERALI\n2. CATTOLICA\n\nPremere numero + INVIO: ")
+fileToManage = input("\nScegliere la compagnia di cui effettuare la copia dei dati.\n1. GENERALI\n2. CATTOLICA\n3. TUTELA\n\nPremere numero + INVIO: ")
 
 try:
     while fileToManage.isnumeric():
@@ -66,8 +67,30 @@ try:
                 readFromCattolica(filesCATTOLICA_toParse[i], pathName_CATTOLICA, finalPathName)
 
             print("--------------------------------------------------------------------\n")
+
+        # TUTELA
+        elif fileToManage == '3':
+            filesTUTELA_toParse = []
+
+            findFilesNotChecked(current_working_directory + partialDir_filesTUTELA + '\\', filesTUTELA_toParse)
+
+            print(*filesTUTELA_toParse, sep='\n')
+
+            if(filesTUTELA_toParse == []):
+                print("\nI dati di tutti i files TUTELA sono stati copiati in PRIMA NOTA.\n")
+                print("--------------------------------------------------------------------\n")
+
+            # fileName_TUTELA = input("Inserire nome completo del file TUTELA con estensione: ")
+            for i in range(0, len(filesTUTELA_toParse)):
+                pathName_TUTELA = current_working_directory + partialDir_filesTUTELA + '\\' + filesTUTELA_toParse[i]
+
+                print("\nPercorso completo del file: ", pathName_TUTELA)
+
+                readFromTutela(filesTUTELA_toParse[i], pathName_TUTELA, finalPathName)
+
+            print("--------------------------------------------------------------------\n")
             
-        fileToManage = input("\nPremere INVIO per uscire, oppure scegliere un'altra compagnia di cui effettuare la copia dei dati.\n1. GENERALI\n2. CATTOLICA\n\nPremere numero + INVIO oppure solo INVIO per uscire: ")
+        fileToManage = input("\nPremere INVIO per uscire, oppure scegliere un'altra compagnia di cui effettuare la copia dei dati.\n1. GENERALI\n2. CATTOLICA\n3. TUTELA\n\nPremere numero + INVIO oppure solo INVIO per uscire: ")
 except Exception as e:
     print("\n\nError: ", e)
     input()
