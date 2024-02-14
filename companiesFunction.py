@@ -2,9 +2,10 @@ import numpy as np
 import pandas as pd
 import datetime
 import re
+import os
 
 # Funzione per leggere i dati dal file GENERALI e salvarli nel file finale 'fileToWrite'
-def readFromGenerali(fileGenerali_read, fileToWrite):
+def readFromGenerali(fileName_Generali, fileGenerali_read, fileToWrite):
     sheetNameGenerali = 'BONIFICI GENERALI '    # ATTENZIONE allo spazio finale nel sheet name
 
     year_month_day = re.findall('\\d{4}-\\d{2}-\\d{2}', fileGenerali_read)[0]
@@ -115,8 +116,14 @@ def readFromGenerali(fileGenerali_read, fileToWrite):
     with pd.ExcelWriter(fileToWrite, engine ="openpyxl", mode='a', if_sheet_exists='overlay') as writer:
         df_Generali.to_excel(writer, index = False, header = False, sheet_name = sheetNameGenerali, startrow = rowData+1, startcol = 1)
 
-    print("Copia dei dati di GENERALI terminata.\n")
-    input("Premere INVIO per proseguire...\n")
+    print("Copia dei dati del file ", fileName_Generali, " di GENERALI terminata.\n")
+    
+    #  Rinomino il file di cui ho appena salvato i dati con la desinenza '_checked'
+    renameFileChecked(fileGenerali_read)
+
+    print("File ", fileName_Generali, " rinominato con '_checked' come desinenza.\n")
+
+    # input("Premere INVIO per proseguire...\n")
 
 
 #   -----------------------------------------------------------------------------------------
@@ -124,7 +131,7 @@ def readFromGenerali(fileGenerali_read, fileToWrite):
 #   -----------------------------------------------------------------------------------------
 #   -----------------------------------------------------------------------------------------
 # Funzione per leggere i dati dal file di CATTOLICA e salvarli nel file finale 'fileToWrite'
-def readFromCattolica(pathName_read, fileToWrite):
+def readFromCattolica(fileName_Cattolica, pathName_read, fileToWrite):
 
     sheetNameCattolica = 'BONIFICI CATTOLICA'
 
@@ -204,5 +211,47 @@ def readFromCattolica(pathName_read, fileToWrite):
     with pd.ExcelWriter(fileToWrite, engine ="openpyxl", mode='a', if_sheet_exists='overlay') as writer:
         df_Cattolica.to_excel(writer, index = False, header = False, sheet_name = sheetNameCattolica, startrow = rowData+1, startcol = 1)
 
-    print("Copia dei dati di CATTOLICA terminata.\n")
-    input("Premere INVIO per proseguire...\n")
+    print("Copia dei dati del file ", fileName_Cattolica, " di CATTOLICA terminata.\n")
+
+    #  Rinomino il file di cui ho appena salvato i dati con la desinenza '_checked'
+    renameFileChecked(pathName_read)
+
+    print("File ", fileName_Cattolica, " rinominato con '_checked' come desinenza.\n")
+
+    # input("Premere INVIO per proseguire...\n")
+
+
+
+
+#   -----------------------------------------------------------------------------------------
+#   -----------------------------------------------------------------------------------------
+#   -----------------------------------------------------------------------------------------
+#   -----------------------------------------------------------------------------------------
+# Funzione per trovare tutti i file di cui non sono ancora stati salvati i dati
+def findFilesNotChecked(pathName, filesToParse):
+    dir_path = pathName
+
+    for root, dirs, files in os.walk(dir_path):
+        for file in files: 
+    
+            # change the extension from '.mp3' to 
+            # the one of your choice.
+            if file.endswith('checked.xls') == False:
+                filesToParse.append(file)
+            
+    
+    # print(*filesToParse, sep='\n')
+
+
+#   -----------------------------------------------------------------------------------------
+#   -----------------------------------------------------------------------------------------
+#   -----------------------------------------------------------------------------------------
+#   -----------------------------------------------------------------------------------------
+# Funzione per rinominare il file di cui sono appena stati salvati i dati: viene aggiunta la desinenza '_checked'
+def renameFileChecked(pathFileName):
+    renameFile = pathFileName
+    indexFileExtension = renameFile.find('.xls')
+    renameFile = renameFile[0:indexFileExtension]
+    renameFile = renameFile + '_checked.xls'
+
+    os.rename(pathFileName, renameFile)
