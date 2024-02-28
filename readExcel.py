@@ -17,14 +17,15 @@ print("Percorso attuale: ", current_working_directory)
 month_folder = input("\nInserire nome cartella del mese + anno (tutto in maiuscolo): ")
 # path = r'C:\LUIGI 04052016\AMICONE LUIGI\DATI DAL 31032008 PC PORTATILE\DATI\CONTABILITA\PARTITE REGISTRATE PER CONTABILITA\GENERALI\PARTITE REGISTRATE\FEBBRAIO 2024'
 
-partialDir_filesGENERALI    = r'\PARTITE REGISTRATE PER CONTABILITA\GENERALI\PARTITE REGISTRATE' + '\\' + month_folder
+partialDir_filesGENERALI    = r'\PARTITE REGISTRATE PER CONTABILITA\GENERALI\2024' + '\\' + month_folder
 partialDir_filesCATTOLICA   = r'\PARTITE REGISTRATE PER CONTABILITA\CATTOLICA\2024' + '\\' + month_folder
 partialDir_filesTUTELA      = r'\PARTITE REGISTRATE PER CONTABILITA\TUTELA LEGALE\2024' + '\\' + month_folder
 
 finalFileName = 'PRIMA_NOTA_TEST_.xlsx'
 finalPathName = current_working_directory + '\\' + finalFileName
 
-fileToManage = input("\nScegliere la compagnia di cui effettuare la copia dei dati.\n1. GENERALI\n2. CATTOLICA\n3. TUTELA\n\nPremere numero + INVIO: ")
+# fileToManage = input("\nScegliere la compagnia di cui effettuare la copia dei dati.\n1. GENERALI\n2. CATTOLICA\n3. TUTELA\n\nPremere numero + INVIO: ")
+fileToManage = '1'
 
 try:
     while fileToManage.isnumeric():
@@ -50,6 +51,8 @@ try:
 
             print("--------------------------------------------------------------------\n")
 
+            fileToManage = '2'
+
         # CATTOLICA
         elif fileToManage == '2':
             filesCATTOLICA_toParse = []
@@ -71,6 +74,8 @@ try:
                 readFromCattolica(filesCATTOLICA_toParse[i], pathName_CATTOLICA, finalPathName)
 
             print("--------------------------------------------------------------------\n")
+
+            fileToManage = '3'
 
         # TUTELA
         elif fileToManage == '3':
@@ -94,8 +99,10 @@ try:
                 readFromTutela(filesTUTELA_toParse[i], pathName_TUTELA, finalPathName)
 
             print("--------------------------------------------------------------------\n")
+
+            fileToManage = 'end'
             
-        fileToManage = input("\nPremere INVIO per uscire, oppure scegliere un'altra compagnia di cui effettuare la copia dei dati.\n1. GENERALI\n2. CATTOLICA\n3. TUTELA\n\nPremere numero + INVIO oppure solo INVIO per uscire: ")
+        # fileToManage = input("\nPremere INVIO per uscire, oppure scegliere un'altra compagnia di cui effettuare la copia dei dati.\n1. GENERALI\n2. CATTOLICA\n3. TUTELA\n\nPremere numero + INVIO oppure solo INVIO per uscire: ")
 except Exception as e:
     print("\n\nError: ", e)
     input()

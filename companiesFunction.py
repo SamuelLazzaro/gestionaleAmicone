@@ -88,11 +88,8 @@ def readFromGenerali(fileName_Generali, fileGenerali_read, fileToWrite):
             if(isinstance(dataframe1.iat[i, IMPORTO], str)):
                 condition = (dataframe1.iat[i, IMPORTO][0] != '-')
             
-            elif(isinstance(dataframe1.iat[i, IMPORTO], int)):
-                condition = (dataframe1.iat[i, IMPORTO] > 0)
-
-            elif(isinstance(dataframe1.iat[i, IMPORTO], float)):
-                condition = (dataframe1.iat[i, IMPORTO] > 0.0)
+            else:
+                condition = (dataframe1.iat[i, IMPORTO] > 0) or (dataframe1.iat[i, IMPORTO] > 0.0)
 
             if(condition):
                 if (dataframe1.iat[i, MOD_PAGAMENTO] == 'BONIFICO'):
@@ -261,11 +258,8 @@ def readFromCattolica(fileName_Cattolica, pathName_read, fileToWrite):
             if(isinstance(dataframe1.iat[i, IMPORTO], str)):
                 condition = (dataframe1.iat[i, IMPORTO][0] != '-')
             
-            elif(isinstance(dataframe1.iat[i, IMPORTO], int)):
-                condition = (dataframe1.iat[i, IMPORTO] > 0)
-
-            elif(isinstance(dataframe1.iat[i, IMPORTO], float)):
-                condition = (dataframe1.iat[i, IMPORTO] > 0.0)
+            else:
+                condition = (dataframe1.iat[i, IMPORTO] > 0) or (dataframe1.iat[i, IMPORTO] > 0.0)
 
             if(condition):
                 if(dataframe1.iat[i, MOD_PAGAMENTO] == 'Bonifico su CC di Agenzia'):
@@ -407,11 +401,8 @@ def readFromTutela(fileName_Tutela, fileTutela_read, fileToWrite):
             if(isinstance(dataframe1.iat[i, IMPORTO], str)):
                 condition = (dataframe1.iat[i, IMPORTO][0] != '-')
             
-            elif(isinstance(dataframe1.iat[i, IMPORTO], int)):
-                condition = (dataframe1.iat[i, IMPORTO] > 0)
-
-            elif(isinstance(dataframe1.iat[i, IMPORTO], float)):
-                condition = (dataframe1.iat[i, IMPORTO] > 0.0)
+            else:
+                condition = (dataframe1.iat[i, IMPORTO] > 0) or (dataframe1.iat[i, IMPORTO] > 0.0)
 
             if(condition):
                 if(dataframe1.iat[i, MOD_PAGAMENTO] == 'BB'):
@@ -508,19 +499,19 @@ def readFromTutela(fileName_Tutela, fileTutela_read, fileToWrite):
 
 
     # Salvataggio dati in SOSPESI
-    for i in range(len(SospesiRowData[0])-1, -1, -1):
+    # for i in range(len(SospesiRowData[0])-1, -1, -1):
 
-        final_listSospesi = []
+    #     final_listSospesi = []
 
-        for k in range(len(df_SospesiTutela)-1, -1, -1):
-            if(SospesiRowData[1][i] == df_SospesiTutela.iat[k, 0]):
-                # print("\nBefore: ", df_Sospesi.values[k, 1:8])
-                final_listSospesi.append(df_SospesiTutela.values[k, 1:8])
-                # print("\nAfter: ", *final_listSospesi, sep='\n')
+    #     for k in range(len(df_SospesiTutela)-1, -1, -1):
+    #         if(SospesiRowData[1][i] == df_SospesiTutela.iat[k, 0]):
+    #             # print("\nBefore: ", df_Sospesi.values[k, 1:8])
+    #             final_listSospesi.append(df_SospesiTutela.values[k, 1:8])
+    #             # print("\nAfter: ", *final_listSospesi, sep='\n')
 
-        final_dfSospesi = pd.DataFrame(final_listSospesi)        
-        with pd.ExcelWriter(fileToWrite, engine ="openpyxl", mode='a', if_sheet_exists='overlay') as writer:
-            final_dfSospesi.to_excel(writer, index = False, header = False, sheet_name = sheetNameSospesi, startrow = SospesiRowData[0][i] + 1, startcol = 1)
+    #     final_dfSospesi = pd.DataFrame(final_listSospesi)        
+    #     with pd.ExcelWriter(fileToWrite, engine ="openpyxl", mode='a', if_sheet_exists='overlay') as writer:
+    #         final_dfSospesi.to_excel(writer, index = False, header = False, sheet_name = sheetNameSospesi, startrow = SospesiRowData[0][i] + 1, startcol = 1)
 
     print("Copia dei dati del file ", fileName_Tutela, " di TUTELA terminata.\n")
     
