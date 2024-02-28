@@ -1,6 +1,7 @@
 # import pandas lib as pd
 import numpy as np
 import pandas as pd
+# import pandas.io.formats.style
 import datetime
 import os
 import re
@@ -9,13 +10,16 @@ from companiesFunction import readFromCattolica, readFromGenerali, readFromTutel
 
 current_working_directory = os.getcwd()
 
-partialDir_filesGENERALI    = r'\PARTITE REGISTRATE PER CONTABILITA\GENERALI\PARTITE REGISTRATE\FEBBRAIO 2024'
-partialDir_filesCATTOLICA   = r'\PARTITE REGISTRATE PER CONTABILITA\CATTOLICA\PARTITE REGISTRATE\FEBBRAIO 2024'
-partialDir_filesTUTELA      = r'\PARTITE REGISTRATE PER CONTABILITA\TUTELA\PARTITE REGISTRATE\FEBBRAIO 2024'
+
 
 print("Percorso attuale: ", current_working_directory)
 
+month_folder = input("\nInserire nome cartella del mese + anno (tutto in maiuscolo): ")
 # path = r'C:\LUIGI 04052016\AMICONE LUIGI\DATI DAL 31032008 PC PORTATILE\DATI\CONTABILITA\PARTITE REGISTRATE PER CONTABILITA\GENERALI\PARTITE REGISTRATE\FEBBRAIO 2024'
+
+partialDir_filesGENERALI    = r'\PARTITE REGISTRATE PER CONTABILITA\GENERALI\PARTITE REGISTRATE' + '\\' + month_folder
+partialDir_filesCATTOLICA   = r'\PARTITE REGISTRATE PER CONTABILITA\CATTOLICA\2024' + '\\' + month_folder
+partialDir_filesTUTELA      = r'\PARTITE REGISTRATE PER CONTABILITA\TUTELA LEGALE\2024' + '\\' + month_folder
 
 finalFileName = 'PRIMA_NOTA_TEST_.xlsx'
 finalPathName = current_working_directory + '\\' + finalFileName
@@ -83,6 +87,7 @@ try:
             # fileName_TUTELA = input("Inserire nome completo del file TUTELA con estensione: ")
             for i in range(0, len(filesTUTELA_toParse)):
                 pathName_TUTELA = current_working_directory + partialDir_filesTUTELA + '\\' + filesTUTELA_toParse[i]
+
 
                 print("\nPercorso completo del file: ", pathName_TUTELA)
 

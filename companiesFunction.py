@@ -1,12 +1,25 @@
 import numpy as np
 import pandas as pd
+# import pandas.io.formats.style
 import datetime
 import re
 import os
 
+
+def highlight_if_FinConsumo(val):
+    """
+    Takes a scalar and returns a string with
+    the css property 'background-color: yellow' for
+    values greater than 80, black otherwise.
+    """
+    color = 'red' if val.find('Fin. Consumo') else 'white'
+    return f'background-color: {color}'
+
+
 # Funzione per leggere i dati dal file GENERALI e salvarli nel file finale 'fileToWrite'
 def readFromGenerali(fileName_Generali, fileGenerali_read, fileToWrite):
     sheetNameGenerali = 'BONIFICI GENERALI '    # ATTENZIONE allo spazio finale nel sheet name
+    sheetNameSospesi = 'SOSPESI'
 
     year_month_day = re.findall('\\d{4}-\\d{2}-\\d{2}', fileGenerali_read)[0]
 
@@ -19,7 +32,7 @@ def readFromGenerali(fileName_Generali, fileGenerali_read, fileToWrite):
     # ATTENZIONE: per come e' fatto attualmente il file di GENERALI vi sono molte righe prima della tabella con i dati, quindi posso non considerare il parametro 'header' nella read_excel.
     # Dovesse pero' cambiare il formato come quello di CATTOLICA bisognera' probabilmente modificare il funzionamento di fileImporto, in quanto se non viene
     # utilizzato il parametro 'header' vengono letti tutti i dati da dopo la riga di intestazione del file excel.
-    dataframe1 = pd.read_excel(fileGenerali_read, usecols='A,B,H,J')
+    dataframe1 = pd.read_excel(fileGenerali_read, usecols='A,B,H,J,K,P')
 
     print("\nLettura file GENERALI eseguita correttamente.\n")
 
@@ -27,10 +40,30 @@ def readFromGenerali(fileName_Generali, fileGenerali_read, fileToWrite):
     # B -> 1 : ANAGRAFICA (CONTRAENTE)
     # H -> 2 : MODALITA' PAGAMENTO
     # J -> 3 : IMPORTO
+    # K -> 4 : COLLABORATORE
+    # P -> 5 : PROVVIGIONI
+    
+    NUM_POLIZZA = int(0)
+    ANAGRAFICA = int(1)
+    MOD_PAGAMENTO = int(2)
+    IMPORTO = int(3)
+    COLLABORATORE = int(4)
+    PROVVIGIONI = int(5)
 
     generali_nr_polizza = []
     generali_anagrafica = []
     generali_importo = []
+
+    sospesi_generali_nr_polizza = []
+    sospesi_generali_anagrafica = []
+    sospesi_generali_importo = []
+    sospesi_generali_agenzia = []
+    sospesi_generali_compagnia = []
+    sospesi_generali_metodo_pagamento = []
+    sospesi_generali_pagato = []
+
+    totale_provvigioni = 0
+
 
     for i in range(0, len(dataframe1)):
 
@@ -38,7 +71,7 @@ def readFromGenerali(fileName_Generali, fileGenerali_read, fileToWrite):
             # Se trovo la stringa 'CONTENITORE' mi fermo perche' per ora sono andato troppo oltre, poi sara' da gestire diversamente
             findImporto = False
 
-        if(findImporto and dataframe1.isnull().iat[i, 0] == False and dataframe1.isnull().iat[i, 1] == False and dataframe1.iat[i, 2] == 'BONIFICO' and dataframe1.isnull().iat[i, 3] == False):
+        if(findImporto and dataframe1.isnull().iat[i, NUM_POLIZZA] == False and dataframe1.isnull().iat[i, ANAGRAFICA] == False and dataframe1.isnull().iat[i, IMPORTO] == False):
             # NON devo salvare le righe di dati vuoti che si trovano all'interno della tabella con i dati da salvare
             # N.B. In questo caso non sto salvando nemmeno la riga con il Totale, tanto me lo ricreo dopo
             # Salvo solamente le righe che hanno 'BONIFICO' nella colonna H del file di partenza
@@ -48,73 +81,104 @@ def readFromGenerali(fileName_Generali, fileGenerali_read, fileToWrite):
             # if(floatValue > 0):
             condition = False
 
-            if(isinstance(dataframe1.iat[i, 3], str)):
-                condition = (dataframe1.iat[i, 3][0] != '-')
+            if(isinstance(dataframe1.iat[i, IMPORTO], str)):
+                condition = (dataframe1.iat[i, IMPORTO][0] != '-')
             
-            elif(isinstance(dataframe1.iat[i, 3], int)):
-                condition = (dataframe1.iat[i, 3] > 0)
+            elif(isinstance(dataframe1.iat[i, IMPORTO], int)):
+                condition = (dataframe1.iat[i, IMPORTO] > 0)
 
-            elif(isinstance(dataframe1.iat[i, 3], float)):
-                condition = (dataframe1.iat[i, 3] > 0.0)
+            elif(isinstance(dataframe1.iat[i, IMPORTO], float)):
+                condition = (dataframe1.iat[i, IMPORTO] > 0.0)
 
             if(condition):
-                generali_nr_polizza.append(dataframe1.iat[i, 0])
-                generali_anagrafica.append(dataframe1.iat[i, 1])
-                generali_importo.append(dataframe1.iat[i, 3])
+                if (dataframe1.iat[i, MOD_PAGAMENTO] == 'BONIFICO'):
+                    # BONIFICO con FINANZIAMENTO A CONSUMO -> da inserire nei SOSPESI
+                    if(dataframe1.iat[i, NUM_POLIZZA].find('Fin. Consumo') != -1):
+                        sospesi_generali_nr_polizza.append(dataframe1.iat[i, NUM_POLIZZA])
+                        sospesi_generali_anagrafica.append(dataframe1.iat[i, ANAGRAFICA])
+                        sospesi_generali_metodo_pagamento.append(dataframe1.iat[i, MOD_PAGAMENTO])
+                        sospesi_generali_importo.append(dataframe1.iat[i, IMPORTO])
+                        sospesi_generali_agenzia.append(dataframe1.iat[i, COLLABORATORE])
+                        sospesi_generali_compagnia.append('GENERALI')
+                        sospesi_generali_pagato.append('No')
+                        totale_provvigioni += dataframe1.iat[i, PROVVIGIONI]
+                        continue        # Vado all'iterazione successiva del while loop
 
-        if(dataframe1.isnull().iat[i, 0] == False and dataframe1.iat[i, 1] == 'ANAGRAFICA' and findImporto == False):
+                    # BONIFICO
+                    generali_nr_polizza.append(dataframe1.iat[i, NUM_POLIZZA])
+                    generali_anagrafica.append(dataframe1.iat[i, ANAGRAFICA])
+                    generali_importo.append(dataframe1.iat[i, IMPORTO])
+
+                elif (dataframe1.iat[i, MOD_PAGAMENTO] == 'CONTANTI' or dataframe1.iat[i, MOD_PAGAMENTO].find('ASSEGNO') != -1):
+                    # CONTANTI o ASSEGNO BANCARIO/POSTALE
+                        sospesi_generali_nr_polizza.append(dataframe1.iat[i, NUM_POLIZZA])
+                        sospesi_generali_anagrafica.append(dataframe1.iat[i, ANAGRAFICA])
+                        sospesi_generali_metodo_pagamento.append(dataframe1.iat[i, MOD_PAGAMENTO])
+                        sospesi_generali_importo.append(dataframe1.iat[i, IMPORTO])
+                        sospesi_generali_agenzia.append(dataframe1.iat[i, COLLABORATORE])
+                        sospesi_generali_compagnia.append('GENERALI')
+                        sospesi_generali_pagato.append('No')
+                        totale_provvigioni += dataframe1.iat[i, PROVVIGIONI]
+                
+
+        if(dataframe1.isnull().iat[i, NUM_POLIZZA] == False and dataframe1.iat[i, ANAGRAFICA] == 'ANAGRAFICA' and findImporto == False):
             # Se trovo la stringa 'ANAGRAFICA' vuol dire che dal ciclo successivo inizio a salvare tutti i dati
             findImporto = True
 
-        
-    # total = 0
+    
+    # Calcolo totale dei sospesi del giorno da sommare al totale dei sospesi precedenti in PRIMA_NOTA
+    # totale_sospesi = 0
 
-    # for i in range(0, len(arr_importo)):
-        # print(float(arr_importo[i]))
+    # for i in range(0, len(sospesi_generali_importo)):
+    #     print(float(sospesi_generali_importo[i]))
 
-        # total += float(arr_importo[i])
+    #     totale_sospesi += float(sospesi_generali_importo[i])
 
-    # print('Total = ', total)
+    # print('Totale sospesi del giorno = ', totale_sospesi)
 
-    final_Generali = list(zip(generali_importo, generali_nr_polizza, generali_anagrafica))
 
-    # for i in range(0, len(final_struct)):
-    #     print(final_struct[i])
+    # Creazione dataframe BONIFICI
+    final_BonificiGenerali = list(zip(generali_importo, generali_nr_polizza, generali_anagrafica))
+    df_BonificiGenerali = pd.DataFrame(final_BonificiGenerali)
 
-    df_Generali = pd.DataFrame(final_Generali)
+    # Creazione dataframe SOSPESI
+    final_SospesiGenerali = list(zip(sospesi_generali_importo, sospesi_generali_nr_polizza, sospesi_generali_anagrafica, sospesi_generali_agenzia, sospesi_generali_compagnia, sospesi_generali_metodo_pagamento, sospesi_generali_pagato))
+    df_SospesiGenerali = pd.DataFrame(final_SospesiGenerali)
 
-    # PATH = r'C:\Users\s.lazzaro\OneDrive - CUSTOM SPA\Desktop\File_Gigi\PRIMA NOTA DEL 2024 NUOVA GESTIONE  1.xls'
-    # PATH = r'C:\Users\s.lazzaro\OneDrive - CUSTOM SPA\Desktop\File_Gigi\FILE_PROVA.xlsx'
-    # wb = xw.Book(PATH)
-    # sheet = wb.sheets['BONIFICI GENERALI ']
+    # Lettura dati presenti nel file excel per i fogli sheetNameGenerali e sheetNameSospesi
+    datareadBonifici = pd.read_excel(fileToWrite, sheet_name = sheetNameGenerali, usecols='A')
+    datareadSospesi = pd.read_excel(fileToWrite, sheet_name = sheetNameSospesi, usecols='A,B')
 
-    # df3 = sheet['A1:C4'].options(pd.DataFrame, index=False, header=True).value
-
-    # print(df3.to_string())
-
-    # writer = pd.ExcelWriter(PATH, engine='openpyxl')
-    # df3.to_excel(writer, sheet_name="BONIFICI GENERALI ", startrow=25)
-
-    # writeInFile = r'C:\Users\s.lazzaro\OneDrive - CUSTOM SPA\Desktop\File_Gigi\PRIMA_NOTA_TEST_.xlsx'
-
-    datareadGenerali = pd.read_excel(fileToWrite, sheet_name = sheetNameGenerali, usecols='A')
-
-    rowData = 0
+    BonificiRowData = 0
+    SospesiRowData = 0
 
     print("\nData inserita: ", day, '-', month, '-', year)
 
     dateToCompare = datetime.datetime(int(year), int(month), int(day), 0, 0)
 
-    for i in range(0, len(datareadGenerali)):
-        if(datareadGenerali.values[i] == dateToCompare):
+    for i in range(0, len(datareadBonifici)):
+        if(datareadBonifici.values[i] == dateToCompare):
             # print(dataread.values[i])
-            rowData = i+1
+            BonificiRowData = i+1
             break
 
+    dateFound = False
+
+    for i in range(0, len(datareadSospesi)):
+        if(dateFound == True and datareadSospesi.isnull().iat[i, 1] == True):
+            # Se in precedenza avevo trovato la data corrispondente e la colonna IMPORTO e' vuota, allora devo iniziare a salvare dalla riga i-esima i valori
+            # In questo modo non sovrascrivo i dati precedentemente salvati
+            SospesiRowData = i
+            break
+        if(datareadSospesi.iat[i, 0] == dateToCompare):
+            dateFound = True
+
     print("Copia e salvataggio dati in esecuzione, attendere ...\n")
+    # df_Generali.style.apply(lambda x: x.map(highlight_if_FinConsumo), axis=None)
 
     with pd.ExcelWriter(fileToWrite, engine ="openpyxl", mode='a', if_sheet_exists='overlay') as writer:
-        df_Generali.to_excel(writer, index = False, header = False, sheet_name = sheetNameGenerali, startrow = rowData+1, startcol = 1)
+        df_BonificiGenerali.to_excel(writer, index = False, header = False, sheet_name = sheetNameGenerali, startrow = BonificiRowData+1, startcol = 1)
+        df_SospesiGenerali.to_excel(writer, index = False, header = False, sheet_name = sheetNameSospesi, startrow = SospesiRowData+1, startcol = 1)
 
     print("Copia dei dati del file ", fileName_Generali, " di GENERALI terminata.\n")
     
@@ -156,7 +220,7 @@ def readFromCattolica(fileName_Cattolica, pathName_read, fileToWrite):
     cattolica_importo = []
 
     for i in range(0, len(dataframe1)):
-        if(dataframe1.isnull().iat[i, 0] == False and dataframe1.isnull().iat[i, 1] == False and dataframe1.isnull().iat[i, 2] == False and dataframe1.iat[i, 3].find('Bonifico') != -1):
+        if(dataframe1.isnull().iat[i, 0] == False and dataframe1.isnull().iat[i, 1] == False and dataframe1.isnull().iat[i, 2] == False and dataframe1.iat[i, 3] == 'Bonifico su CC di Agenzia'):
             # NON devo salvare le righe di dati vuoti che si trovano all'interno della tabella con i dati da salvare
             # N.B. In questo caso non sto salvando nemmeno la riga con il Totale, tanto me lo ricreo dopo
             # Salvo solamente le righe che hanno la sottostringa 'Bonifico' nella colonna K del file di partenza
