@@ -6,28 +6,42 @@ import datetime
 import os
 import re
 
+from classDefinition import TotaleSospesiNuovi
 from companiesFunction import readFromCattolica, readFromGenerali, readFromTutela, findFilesNotChecked
 
-current_working_directory = os.getcwd()
-
-
-
-print("Percorso attuale: ", current_working_directory)
-
-month_folder = input("\nInserire nome cartella del mese + anno (tutto in maiuscolo): ")
-# path = r'C:\LUIGI 04052016\AMICONE LUIGI\DATI DAL 31032008 PC PORTATILE\DATI\CONTABILITA\PARTITE REGISTRATE PER CONTABILITA\GENERALI\PARTITE REGISTRATE\FEBBRAIO 2024'
-
-partialDir_filesGENERALI    = r'\PARTITE REGISTRATE PER CONTABILITA\GENERALI\2024' + '\\' + month_folder
-partialDir_filesCATTOLICA   = r'\PARTITE REGISTRATE PER CONTABILITA\CATTOLICA\2024' + '\\' + month_folder
-partialDir_filesTUTELA      = r'\PARTITE REGISTRATE PER CONTABILITA\TUTELA LEGALE\2024' + '\\' + month_folder
-
-finalFileName = 'PRIMA_NOTA_TEST_.xlsx'
-finalPathName = current_working_directory + '\\' + finalFileName
-
-# fileToManage = input("\nScegliere la compagnia di cui effettuare la copia dei dati.\n1. GENERALI\n2. CATTOLICA\n3. TUTELA\n\nPremere numero + INVIO: ")
-fileToManage = '1'
-
 try:
+    totale_sospesi_vecchi = 0
+    totale_sospesi_nuovi = TotaleSospesiNuovi()
+
+    # Gestione versamenti effettuati
+    versamenti_SI_NO = input("\nSono stati eseguiti dei versamenti? [SI]/[NO]: ")
+    versamenti_SI_NO = versamenti_SI_NO.upper()
+
+    if(versamenti_SI_NO[0] == 'S'):
+        agenzia_versamenti = input("\nPer quale agenzia e' stato eseguito il versamento? Digitare il numero corrispondente all'agenzia e premere INVIO:\n1. RHO\n2. SOMMA LOMBARDO\n3. LEGNANO\n4. GALLARATE\n5. AGOS\n\nAgenzia numero: ")
+        importo_versamenti = input("\nInserire l'importo del versamento: ")
+
+        # Sostituisco un eventuale ',' con un '.' per non avere poi un errore con la funzione float()
+        importo_versamenti = importo_versamenti.replace(',', '.')
+        importo_versamenti = float(importo_versamenti)
+
+    current_working_directory = os.getcwd()
+
+    print("Percorso attuale: ", current_working_directory)
+
+    month_folder = input("\nInserire nome cartella del mese + anno (tutto in maiuscolo): ")
+    # path = r'C:\LUIGI 04052016\AMICONE LUIGI\DATI DAL 31032008 PC PORTATILE\DATI\CONTABILITA\PARTITE REGISTRATE PER CONTABILITA\GENERALI\PARTITE REGISTRATE\FEBBRAIO 2024'
+
+    partialDir_filesGENERALI    = r'\PARTITE REGISTRATE PER CONTABILITA\GENERALI\2024' + '\\' + month_folder
+    partialDir_filesCATTOLICA   = r'\PARTITE REGISTRATE PER CONTABILITA\CATTOLICA\2024' + '\\' + month_folder
+    partialDir_filesTUTELA      = r'\PARTITE REGISTRATE PER CONTABILITA\TUTELA LEGALE\2024' + '\\' + month_folder
+
+    finalFileName = 'PRIMA_NOTA_TEST_.xlsx'
+    finalPathName = current_working_directory + '\\' + finalFileName
+
+    # fileToManage = input("\nScegliere la compagnia di cui effettuare la copia dei dati.\n1. GENERALI\n2. CATTOLICA\n3. TUTELA\n\nPremere numero + INVIO: ")
+    fileToManage = '1'
+
     while fileToManage.isnumeric():
         # GENERALI
         if fileToManage == '1':
@@ -47,7 +61,7 @@ try:
 
                 print("\nPercorso completo del file: ", pathName_GENERALI)
 
-                readFromGenerali(filesGENERALI_toParse[i], pathName_GENERALI, finalPathName)
+                readFromGenerali(filesGENERALI_toParse[i], pathName_GENERALI, finalPathName, totale_sospesi_nuovi)
 
             print("--------------------------------------------------------------------\n")
 
@@ -55,6 +69,8 @@ try:
 
         # CATTOLICA
         elif fileToManage == '2':
+            print("\nTotale sospesi nuovi dopo GENERALI: ", totale_sospesi_nuovi)
+
             filesCATTOLICA_toParse = []
 
             findFilesNotChecked(current_working_directory + partialDir_filesCATTOLICA + '\\', filesCATTOLICA_toParse)
@@ -71,7 +87,7 @@ try:
 
                 print("\nPercorso completo del file: ", pathName_CATTOLICA)
 
-                readFromCattolica(filesCATTOLICA_toParse[i], pathName_CATTOLICA, finalPathName)
+                readFromCattolica(filesCATTOLICA_toParse[i], pathName_CATTOLICA, finalPathName, totale_sospesi_nuovi)
 
             print("--------------------------------------------------------------------\n")
 
@@ -79,6 +95,8 @@ try:
 
         # TUTELA
         elif fileToManage == '3':
+            print("\nTotale sospesi nuovi dopo CATTOLICA: ", totale_sospesi_nuovi)
+
             filesTUTELA_toParse = []
 
             findFilesNotChecked(current_working_directory + partialDir_filesTUTELA + '\\', filesTUTELA_toParse)
@@ -96,10 +114,11 @@ try:
 
                 print("\nPercorso completo del file: ", pathName_TUTELA)
 
-                readFromTutela(filesTUTELA_toParse[i], pathName_TUTELA, finalPathName)
+                readFromTutela(filesTUTELA_toParse[i], pathName_TUTELA, finalPathName, totale_sospesi_nuovi)
 
             print("--------------------------------------------------------------------\n")
 
+            print("\nTotale sospesi nuovi dopo TUTELA LEGALE: ", totale_sospesi_nuovi)
             fileToManage = 'end'
             
         # fileToManage = input("\nPremere INVIO per uscire, oppure scegliere un'altra compagnia di cui effettuare la copia dei dati.\n1. GENERALI\n2. CATTOLICA\n3. TUTELA\n\nPremere numero + INVIO oppure solo INVIO per uscire: ")
