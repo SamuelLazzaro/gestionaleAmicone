@@ -1,6 +1,5 @@
 import pandas as pd
-
-# from classDefinition import SubagentAgency
+import datetime
 
 subagentAgency =   [["AMICONE LUIGI",             "GALLARATE"], 
                     ["AMICONE RENZO",             "GALLARATE"],
@@ -23,32 +22,35 @@ def findAgencyFromSubagent(subagentName):
     AGENZIA = int(1)    
 
     for i in range(0, len(subagentAgency)):
+        if(isinstance(subagentName, str) == False): # Se non e' una stringa, allora quel campo e' vuoto
+            return "Collaboratore non trovato"
         if(subagentName.upper().find(subagentAgency[i][NOME]) != -1):
             break
 
     return subagentAgency[i][AGENZIA]
 
 
-def updateAgencyTotaleSospesi(totSospesiNuovi, importo, agenzia):
+def updateAgencyTotaleSospesi(totSospesi, importo, agenzia):
     if(agenzia == "GALLARATE"):
-        totSospesiNuovi.totGallarate += importo
+        totSospesi.totGallarate += importo
     elif(agenzia == "RHO"):
-        totSospesiNuovi.totRho += importo
+        totSospesi.totRho += importo
     elif(agenzia == "LEGNANO"):
-        totSospesiNuovi.totLegnano += importo
+        totSospesi.totLegnano += importo
     elif(agenzia == "SOMMA LOMBARDO"):
-        totSospesiNuovi.totSommaLombardo += importo
+        totSospesi.totSommaLombardo += importo
     elif(agenzia == "AGOS"):
-        totSospesiNuovi.totAgos += importo
+        totSospesi.totAgos += importo
     elif(agenzia == "TUTELA LEGALE"):
-        totSospesiNuovi.totTutelaLegale += importo
+        totSospesi.totTutelaLegale += importo
     else:
-        raise Exception("\nERRORE: agenzia a cui assegnare l'importo del versamento non trovata.\n")
+        # raise Exception("\nERRORE: agenzia a cui assegnare l'importo del versamento non trovata.\n")
+        print("\nAgenzia non trovata.\n")
     
 
 def writeSospesi_inPrimaNota(totSospesi, filePathnameToWrite, dateOfData):
     sheetNamePrimaNota = "PRIMA NOTA"
-    dataExcel = pd.read_excel(filePathnameToWrite, sheet_name = sheetNamePrimaNota, usecols='A,D,E,L,N')
+    dataExcel = pd.read_excel(filePathnameToWrite, sheet_name = sheetNamePrimaNota, usecols='A')
 
     print("Lettura sheet PRIMA NOTA eseguita con successo.\n")
 
@@ -66,18 +68,18 @@ def writeSospesi_inPrimaNota(totSospesi, filePathnameToWrite, dateOfData):
 
     rowData = 0
 
-    listPrimaNota = [["SOSPESI RHO",        totSospesi.totRho,              "NUOVI SOSPESI RHO",        0.0],
-                     ["SOSPESI GALLARATE",  totSospesi.totGallarate,        "NUOVI SOSPESI GALLARATE",  0.0],
-                     ["SOSPESI LEGNANO",    totSospesi.totLegnano,          "NUOVI SOSPESI LEGNANO",    0.0],
-                     ["SOSPESI SOMMA",      totSospesi.totSommaLombardo,    "NUOVI SOSPESI SOMMA",      0.0],
-                     ["SOSPESI AGOS",       totSospesi.totAgos,             "NUOVI SOSPESI AGOS",       0.0],
-                     ["SOSPESI TUTELA",     totSospesi.totTutelaLegale,     "NUOVI SOSPESI TUTELA",     0.0]]
+    listPrimaNota = [["SOSPESI RHO",        0.0,    "NUOVI SOSPESI RHO",        totSospesi.totRho          ],
+                     ["SOSPESI GALLARATE",  0.0,    "NUOVI SOSPESI GALLARATE",  totSospesi.totGallarate    ],
+                     ["SOSPESI LEGNANO",    0.0,    "NUOVI SOSPESI LEGNANO",    totSospesi.totLegnano      ],
+                     ["SOSPESI SOMMA",      0.0,    "NUOVI SOSPESI SOMMA",      totSospesi.totSommaLombardo],
+                     ["SOSPESI AGOS",       0.0,    "NUOVI SOSPESI AGOS",       totSospesi.totAgos         ],
+                     ["SOSPESI TUTELA",     0.0,    "NUOVI SOSPESI TUTELA",     totSospesi.totTutelaLegale ]]
 
     # Creazione dataframe BONIFICI
     df_PrimaNota = pd.DataFrame(listPrimaNota)
 
     for i in range(0, len(dataExcel)):
-        if(dataExcel.iat[i][DATA] == dateOfData):
+        if(dataExcel.values[i][DATA] == dateOfData):
             # print(dataread.values[i])
             rowData = i+1
             break    
@@ -87,3 +89,10 @@ def writeSospesi_inPrimaNota(totSospesi, filePathnameToWrite, dateOfData):
 
     with pd.ExcelWriter(filePathnameToWrite, engine ="openpyxl", mode='a', if_sheet_exists='overlay') as writer:
         df_PrimaNota.to_excel(writer, index = False, header = False, sheet_name = sheetNamePrimaNota, startrow = rowData+37, startcol = 10)    # 10 = 'K'
+
+
+
+
+            
+            
+            

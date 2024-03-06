@@ -7,7 +7,7 @@ import os
 import re
 
 from classDefinition import TotaleSospesiNuovi
-from companiesFunction import readFromCattolica, readFromGenerali, readFromTutela, findFilesNotChecked
+from companiesFunction import *
 
 try:
     totale_sospesi_vecchi = 0
@@ -18,7 +18,7 @@ try:
     versamenti_SI_NO = versamenti_SI_NO.upper()
 
     if(versamenti_SI_NO[0] == 'S'):
-        agenzia_versamenti = input("\nPer quale agenzia e' stato eseguito il versamento? Digitare il numero corrispondente all'agenzia e premere INVIO:\n1. RHO\n2. SOMMA LOMBARDO\n3. LEGNANO\n4. GALLARATE\n5. AGOS\n\nAgenzia numero: ")
+        agenzia_versamenti = input("\nPer quale agenzia e' stato eseguito il versamento? Digitare il numero corrispondente all'agenzia e premere INVIO:\n1. RHO\n2. SOMMA LOMBARDO\n3. LEGNANO\n4. GALLARATE\n5. n\n\nAgenzia numero: ")
         importo_versamenti = input("\nInserire l'importo del versamento: ")
 
         # Sostituisco un eventuale ',' con un '.' per non avere poi un errore con la funzione float()
@@ -120,6 +120,8 @@ try:
 
             print("\nTotale sospesi nuovi dopo TUTELA LEGALE: ", totale_sospesi_nuovi)
             fileToManage = 'end'
+
+            readSospesiFromExcel(finalPathName)
             
         # fileToManage = input("\nPremere INVIO per uscire, oppure scegliere un'altra compagnia di cui effettuare la copia dei dati.\n1. GENERALI\n2. CATTOLICA\n3. TUTELA\n\nPremere numero + INVIO oppure solo INVIO per uscire: ")
 except Exception as e:
