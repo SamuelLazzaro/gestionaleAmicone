@@ -42,6 +42,8 @@ try:
     # fileToManage = input("\nScegliere la compagnia di cui effettuare la copia dei dati.\n1. GENERALI\n2. CATTOLICA\n3. TUTELA\n\nPremere numero + INVIO: ")
     fileToManage = '1'
 
+    # readSospesiFromExcel(finalPathName)
+
     while fileToManage.isnumeric():
         # GENERALI
         if fileToManage == '1':
@@ -119,9 +121,12 @@ try:
             print("--------------------------------------------------------------------\n")
 
             print("\nTotale sospesi nuovi dopo TUTELA LEGALE: ", totale_sospesi_nuovi)
-            fileToManage = 'end'
+            fileToManage = '4'
 
+        elif fileToManage == '4':
             readSospesiFromExcel(finalPathName)
+
+            fileToManage = 'end'
             
         # fileToManage = input("\nPremere INVIO per uscire, oppure scegliere un'altra compagnia di cui effettuare la copia dei dati.\n1. GENERALI\n2. CATTOLICA\n3. TUTELA\n\nPremere numero + INVIO oppure solo INVIO per uscire: ")
 except Exception as e:
