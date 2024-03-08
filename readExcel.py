@@ -120,7 +120,6 @@ try:
 
             print("--------------------------------------------------------------------\n")
 
-            print("\nTotale sospesi nuovi dopo TUTELA LEGALE: ", totale_sospesi_nuovi)
             fileToManage = '4'
 
         elif fileToManage == '4':

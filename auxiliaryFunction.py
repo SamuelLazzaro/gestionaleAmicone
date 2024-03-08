@@ -74,12 +74,12 @@ def writeSospesi_inPrimaNota(totSospesi, filePathnameToWrite, dateFromSospesi):
 
     rowData = 0
 
-    listPrimaNota = [["SOSPESI RHO",        0.0,    "NUOVI SOSPESI RHO",        float(totSospesi.totRho)          ],
-                     ["SOSPESI GALLARATE",  0.0,    "NUOVI SOSPESI GALLARATE",  float(totSospesi.totGallarate)    ],
-                     ["SOSPESI LEGNANO",    0.0,    "NUOVI SOSPESI LEGNANO",    float(totSospesi.totLegnano)      ],
-                     ["SOSPESI SOMMA",      0.0,    "NUOVI SOSPESI SOMMA",      float(totSospesi.totSommaLombardo)],
-                     ["SOSPESI AGOS",       0.0,    "NUOVI SOSPESI AGOS",       float(totSospesi.totAgos)         ],
-                     ["SOSPESI TUTELA",     0.0,    "NUOVI SOSPESI TUTELA",     float(totSospesi.totTutelaLegale) ]]
+    listPrimaNota = [["SOSPESI RHO",        "NUOVI SOSPESI RHO",        float(totSospesi.totRho)          ],
+                     ["SOSPESI GALLARATE",  "NUOVI SOSPESI GALLARATE",  float(totSospesi.totGallarate)    ],
+                     ["SOSPESI LEGNANO",    "NUOVI SOSPESI LEGNANO",    float(totSospesi.totLegnano)      ],
+                     ["SOSPESI SOMMA",      "NUOVI SOSPESI SOMMA",      float(totSospesi.totSommaLombardo)],
+                     ["SOSPESI AGOS",       "NUOVI SOSPESI AGOS",       float(totSospesi.totAgos)         ],
+                     ["SOSPESI TUTELA",     "NUOVI SOSPESI TUTELA",     float(totSospesi.totTutelaLegale) ]]
 
     # Creazione dataframe PRIMA NOTA
     df_PrimaNota = pd.DataFrame(listPrimaNota)
@@ -106,11 +106,11 @@ def writeSospesi_inPrimaNota(totSospesi, filePathnameToWrite, dateFromSospesi):
                 print("ERROR")
 
 
-    print("Copia e salvataggio dati nel foglio 'PRIMA NOTA' della data ", dateFromSospesi, " in esecuzione, attendere ...\n")
+    print("Copia e salvataggio dati nel foglio 'PRIMA NOTA' della data ", dateFromSospesi.date(), " in esecuzione, attendere ...\n")
     # df_Generali.style.apply(lambda x: x.map(highlight_if_FinConsumo), axis=None)
 
     with pd.ExcelWriter(filePathnameToWrite, engine ="openpyxl", mode='a', if_sheet_exists='overlay') as writer:
-        df_PrimaNota.to_excel(writer, index = False, header = False, sheet_name = sheetNamePrimaNota, startrow = rowData+37, startcol = 10)    # 10 = 'K'
+        df_PrimaNota.to_excel(writer, index = False, columns = [10, 12, 13], header = False, sheet_name = sheetNamePrimaNota, startrow = rowData+37, startcol = 10)    # 10 = 'K'
 
 
 
@@ -141,7 +141,17 @@ def convertDatetimeToString(datetimeToConvert, DATE_INDEX):
     for i in range(0, len(datetimeToConvert)):
         try:
             if(isinstance(datetimeToConvert.values[i][DATE_INDEX], datetime.datetime)):
-                datetimeToConvert.values[i][DATE_INDEX] = datetimeToConvert.values[i][DATE_INDEX].strftim(dateFormat)
+                datetimeToConvert.values[i][DATE_INDEX] = datetimeToConvert.values[i][DATE_INDEX].strftime(dateFormat)
+        except ValueError:
+            print("\nErrore in convertDatetimeToString.\n")
+
+
+def convertDatetimeValueToString(datetimeToConvert):
+        try:
+            if(isinstance(datetimeToConvert, datetime.datetime)):
+                dateString = datetimeToConvert.strftime(dateFormat)
+
+                return dateString
         except ValueError:
             print("\nErrore in convertDatetimeToString.\n")
 

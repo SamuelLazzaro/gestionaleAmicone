@@ -7,7 +7,7 @@ import os
 import copy
 
 from classDefinition import TotaleSospesiNew_Date
-from auxiliaryFunction import findAgencyFromSubagent, updateAgencyTotaleSospesi, writeSospesi_inPrimaNota, convertStringToDatetime, convertDatetimeToString
+from auxiliaryFunction import *
 
 sheetNameSospesi = 'SOSPESI'
 
@@ -69,6 +69,7 @@ def readFromGenerali(fileName_Generali, fileGenerali_read, fileToWrite, totale_s
     sospesi_generali_importo = []
     sospesi_generali_agenzia = []
     sospesi_generali_compagnia = []
+    sospesi_generali_collaboratore = []
     sospesi_generali_metodo_pagamento = []
     sospesi_generali_pagato = []
 
@@ -121,6 +122,7 @@ def readFromGenerali(fileName_Generali, fileGenerali_read, fileToWrite, totale_s
                         agenzia = "AGOS"
                         sospesi_generali_agenzia.append(agenzia)
                         sospesi_generali_compagnia.append('GENERALI')
+                        sospesi_generali_collaboratore.append(dataframe1.iat[i, COLLABORATORE])
                         sospesi_generali_pagato.append('No')
                         totale_provvigioni += dataframe1.iat[i, PROVVIGIONI]
                         updateAgencyTotaleSospesi(totale_sospesi_nuovi, importo_versamento, agenzia)
@@ -142,6 +144,7 @@ def readFromGenerali(fileName_Generali, fileGenerali_read, fileToWrite, totale_s
                         agenzia = findAgencyFromSubagent(dataframe1.iat[i, COLLABORATORE])
                         sospesi_generali_agenzia.append(agenzia)
                         sospesi_generali_compagnia.append('GENERALI')
+                        sospesi_generali_collaboratore.append(dataframe1.iat[i, COLLABORATORE])
                         sospesi_generali_pagato.append('No')
                         totale_provvigioni += dataframe1.iat[i, PROVVIGIONI]
                         updateAgencyTotaleSospesi(totale_sospesi_nuovi, importo_versamento, agenzia)
@@ -168,7 +171,7 @@ def readFromGenerali(fileName_Generali, fileGenerali_read, fileToWrite, totale_s
     df_BonificiGenerali = pd.DataFrame(final_BonificiGenerali)
 
     # Creazione dataframe SOSPESI
-    final_SospesiGenerali = list(zip(sospesi_generali_data, sospesi_generali_importo, sospesi_generali_nr_polizza, sospesi_generali_anagrafica, sospesi_generali_agenzia, sospesi_generali_compagnia, sospesi_generali_metodo_pagamento, sospesi_generali_pagato))
+    final_SospesiGenerali = list(zip(sospesi_generali_data, sospesi_generali_importo, sospesi_generali_nr_polizza, sospesi_generali_anagrafica, sospesi_generali_agenzia, sospesi_generali_compagnia, sospesi_generali_collaboratore, sospesi_generali_metodo_pagamento, sospesi_generali_pagato))
     df_SospesiGenerali = pd.DataFrame(final_SospesiGenerali)
 
     # Lettura dati presenti nel file excel per i fogli sheetNameGenerali e sheetNameSospesi
@@ -261,6 +264,7 @@ def readFromCattolica(fileName_Cattolica, pathName_read, fileToWrite, totale_sos
     sospesi_cattolica_importo = []
     sospesi_cattolica_agenzia = []
     sospesi_cattolica_compagnia = []
+    sospesi_cattolica_collaboratore = []
     sospesi_cattolica_metodo_pagamento = []
     sospesi_cattolica_pagato = []
 
@@ -325,6 +329,7 @@ def readFromCattolica(fileName_Cattolica, pathName_read, fileToWrite, totale_sos
                             updateAgencyTotaleSospesi(totale_sospesi_nuovi, importo_versamento, agenzia)
 
                         sospesi_cattolica_compagnia.append('CATTOLICA')
+                        sospesi_cattolica_collaboratore.append(dataframe1.iat[i, COLLABORATORE])
                         sospesi_cattolica_pagato.append('No')
 
                         totale_provvigioni += dataframe1.iat[i, PROVVIGIONI]
@@ -336,7 +341,7 @@ def readFromCattolica(fileName_Cattolica, pathName_read, fileToWrite, totale_sos
     df_BonificiCattolica = pd.DataFrame(final_BonificiCattolica)
 
     # Creazione dataframe SOSPESI
-    final_SospesiCattolica = list(zip(sospesi_cattolica_data, sospesi_cattolica_importo, sospesi_cattolica_nr_polizza, sospesi_cattolica_anagrafica, sospesi_cattolica_agenzia, sospesi_cattolica_compagnia, sospesi_cattolica_metodo_pagamento, sospesi_cattolica_pagato))
+    final_SospesiCattolica = list(zip(sospesi_cattolica_data, sospesi_cattolica_importo, sospesi_cattolica_nr_polizza, sospesi_cattolica_anagrafica, sospesi_cattolica_agenzia, sospesi_cattolica_compagnia, sospesi_cattolica_collaboratore, sospesi_cattolica_metodo_pagamento, sospesi_cattolica_pagato))
     df_SospesiCattolica = pd.DataFrame(final_SospesiCattolica)
 
     # Dal file finale vado a leggere tutte le date presenti nel relativo sheet nella colonna 'A'
@@ -429,6 +434,7 @@ def readFromTutela(fileName_Tutela, fileTutela_read, fileToWrite, totale_sospesi
     sospesi_tutela_importo = []
     sospesi_tutela_agenzia = []
     sospesi_tutela_compagnia = []
+    sospesi_tutela_collaboratore = []
     sospesi_tutela_metodo_pagamento = []
     sospesi_tutela_pagato = []
     sospesi_tutela_data = []
@@ -486,6 +492,7 @@ def readFromTutela(fileName_Tutela, fileTutela_read, fileToWrite, totale_sospesi
                         sospesi_tutela_importo.append(importo_versamento)
                         sospesi_tutela_agenzia.append('TUTELA LEGALE')     # sospesi_tutela_agenzia.append(dataframe1.iat[i, COLLABORATORE])
                         sospesi_tutela_compagnia.append('TUTELA')
+                        sospesi_tutela_collaboratore.append('')
                         sospesi_tutela_pagato.append('No')
                         
                         totale_provvigioni += dataframe1.iat[i, PROVVIGIONI]
@@ -500,7 +507,7 @@ def readFromTutela(fileName_Tutela, fileTutela_read, fileToWrite, totale_sospesi
     df_BonificiTutela = pd.DataFrame(final_BonificiTutela)
 
     # Creazione dataframe SOSPESI
-    final_SospesiTutela = list(zip(sospesi_tutela_data, sospesi_tutela_importo, sospesi_tutela_nr_polizza, sospesi_tutela_anagrafica, sospesi_tutela_agenzia, sospesi_tutela_compagnia, sospesi_tutela_metodo_pagamento, sospesi_tutela_pagato))
+    final_SospesiTutela = list(zip(sospesi_tutela_data, sospesi_tutela_importo, sospesi_tutela_nr_polizza, sospesi_tutela_anagrafica, sospesi_tutela_agenzia, sospesi_tutela_compagnia, sospesi_tutela_collaboratore, sospesi_tutela_metodo_pagamento, sospesi_tutela_pagato))
     df_SospesiTutela = pd.DataFrame(final_SospesiTutela)
 
     datareadTutela = pd.read_excel(fileToWrite, sheet_name = sheetNameTutela, usecols='A')
@@ -536,13 +543,14 @@ def readFromTutela(fileName_Tutela, fileTutela_read, fileToWrite, totale_sospesi
             dateFound = False
         
         if(isinstance(datareadSospesi.iat[i, DATA_SOSPESI], datetime.datetime) or isinstance(datareadSospesi.iat[i, DATA_SOSPESI], datetime.date)):
-            # print(dataread.values[i])
-            # Se il dato appena letto dal foglio BONIFICI TUTELA in PRIMA NOTA nella colonna 'A' e' una data, vedo se corrisponde ad una delle date di cui ho dei dati da salvare
-            for j in range(0, len(df_SospesiTutela)):
-                if(datareadSospesi.iat[i, DATA_SOSPESI] == df_SospesiTutela.iat[j, DATA_SOSPESI]):
-                    dateFound = True
-                    SospesiRowData[1].append(df_SospesiTutela.iat[j, DATA_SOSPESI])
-                    break
+            if(datareadSospesi.iat[i, DATA_SOSPESI] != datareadSospesi.iat[i-1, DATA_SOSPESI]):
+                # print(dataread.values[i])
+                # Se il dato appena letto dal foglio SOSPESI nella colonna 'A' e' una data, vedo se corrisponde ad una delle date di cui ho dei dati da salvare
+                for j in range(0, len(df_SospesiTutela)):
+                    if(datareadSospesi.iat[i, DATA_SOSPESI] == df_SospesiTutela.iat[j, DATA_SOSPESI]):
+                        dateFound = True
+                        SospesiRowData[1].append(df_SospesiTutela.iat[j, DATA_SOSPESI])
+                        break
 
 
     print("Copia e salvataggio dati in esecuzione, attendere ...\n")
@@ -575,10 +583,19 @@ def readFromTutela(fileName_Tutela, fileTutela_read, fileToWrite, totale_sospesi
         for k in range(len(df_SospesiTutela)-1, -1, -1):
             if(SospesiRowData[1][i] == df_SospesiTutela.iat[k, 0]):
                 # Converto tutte le date da formato 'datetime' a formato stringa "%d/%m/%Y"
-                df_SospesiTutela.values[k, 0] = datetime.datetime.fromtimestamp(df_SospesiTutela.values[k, 0]).strftime(dateFormat)
-                final_listSospesi.append(df_SospesiTutela.values[k, 0:8])
+                # df_SospesiTutela.values[k, 0] e' un oggetto di tipo pandas Timestamp
+                fromTimestampToDatetime = (df_SospesiTutela.values[k, 0]).date()
+                # Converto la datetime.date in una datetime.datetime
+                fromTimestampToDatetime = datetime.datetime.combine(fromTimestampToDatetime, datetime.datetime.min.time())
+                datetimeString = convertDatetimeValueToString(fromTimestampToDatetime)
+                temp_listSospesiTutela = df_SospesiTutela.values[k, 0:8].tolist() # Conversione da pandas dataframe a list
+                temp_listSospesiTutela[0] = datetimeString  # Assegno la data come stringa al 1° valore della list
+                final_listSospesi.append(temp_listSospesiTutela)
+                break
 
-        final_dfSospesi = pd.DataFrame(final_listSospesi)        
+
+        final_dfSospesi = pd.DataFrame(final_listSospesi)
+
         with pd.ExcelWriter(fileToWrite, engine ="openpyxl", mode='a', if_sheet_exists='overlay') as writer:
             final_dfSospesi.to_excel(writer, index = False, header = False, sheet_name = sheetNameSospesi, startrow = SospesiRowData[0][i] + 1, startcol = 0)
 
@@ -633,15 +650,16 @@ def readSospesiFromExcel(fileToWrite):
     sheetNameSospesi = "SOSPESI"
 
     # Caricamento dei dati dal foglio 'SOSPESI'
-    dataSospesiExcel = pd.read_excel(fileToWrite, sheet_name = sheetNameSospesi, usecols='A,B,E,H,J')
+    dataSospesiExcel = pd.read_excel(fileToWrite, sheet_name = sheetNameSospesi, usecols='A,B,E,I,K')
 
     print("Lettura dati dal sheet SOSPESI eseguita con successo.\n")
 
     # A -> 0 : DATA
     # B -> 1 : IMPORTO
     # E -> 2 : AGENZIA
-    # H -> 3 : PAGATO
-    # J -> 4 : NOTE
+    # I -> 3 : PAGATO
+    # K -> 4 : NOTE
+
     listSospesiNew = []
     totSospesiNew = TotaleSospesiNew_Date()
     
@@ -698,7 +716,7 @@ def readSospesiFromExcel(fileToWrite):
                         # Se trovo la stringa "Eseguito" vado alla tabella successiva, ossia a quella relativa alla data successiva
                         i += SIZEOF_SINGLE_TABLE_SOSPESI
                     else:
-                        # Non c'e' un importo e non c'e' la stringa "Eseguito", quindi e' una nuova tabella che sto analizzando, quindi salvo la riga in cui poi andare a scrivere la stringa "Eseguito"
+                        # Non c'e' un importo e non c'e' la stringa "Eseguito", quindi e' una nuova tabella che sto analizzando, quindi salvo la riga in cui poi andare a scrivere la stringa "Eseguito" se e solo se la data della tabella che sto analizzando e' precedente o coincidente con la data attuale
                         if(dataSospesiExcel.iat[i, DATA] <= todayDate):
                             indexRowExecuted.append(i+1)
 
@@ -711,8 +729,9 @@ def readSospesiFromExcel(fileToWrite):
     for i in range(0, len(listSospesiNew)):
         writeSospesi_inPrimaNota(listSospesiNew[i], fileToWrite, listSospesiNew[i].date)
 
+    for i in range(0, len(indexRowExecuted)):
         with pd.ExcelWriter(fileToWrite, engine ="openpyxl", mode='a', if_sheet_exists='overlay') as writer:
-            df_sospesiExecuted.to_excel(writer, index = False, header = False, sheet_name = sheetNameSospesi, startrow = indexRowExecuted[i]+1, startcol = 9)    # 9 = 'J' -> NOTE
+            df_sospesiExecuted.to_excel(writer, index = False, header = False, sheet_name = sheetNameSospesi, startrow = indexRowExecuted[i], startcol = 10)    # 10 = 'J' -> NOTE
 
 
 
