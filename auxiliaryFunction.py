@@ -74,15 +74,23 @@ def writeSospesi_inPrimaNota(totSospesi, filePathnameToWrite, dateFromSospesi):
 
     rowData = 0
 
-    listPrimaNota = [["SOSPESI RHO",        "NUOVI SOSPESI RHO",        float(totSospesi.totRho)          ],
-                     ["SOSPESI GALLARATE",  "NUOVI SOSPESI GALLARATE",  float(totSospesi.totGallarate)    ],
-                     ["SOSPESI LEGNANO",    "NUOVI SOSPESI LEGNANO",    float(totSospesi.totLegnano)      ],
-                     ["SOSPESI SOMMA",      "NUOVI SOSPESI SOMMA",      float(totSospesi.totSommaLombardo)],
-                     ["SOSPESI AGOS",       "NUOVI SOSPESI AGOS",       float(totSospesi.totAgos)         ],
-                     ["SOSPESI TUTELA",     "NUOVI SOSPESI TUTELA",     float(totSospesi.totTutelaLegale) ]]
+    listSospesiVecchi = [["SOSPESI RHO"],
+                         ["SOSPESI GALLARATE"],
+                         ["SOSPESI LEGNANO"],
+                         ["SOSPESI SOMMA"],
+                         ["SOSPESI AGOS"],
+                         ["SOSPESI TUTELA"]]
+
+    listPrimaNota = [["NUOVI SOSPESI RHO",        float(totSospesi.totRho)          ],
+                     ["NUOVI SOSPESI GALLARATE",  float(totSospesi.totGallarate)    ],
+                     ["NUOVI SOSPESI LEGNANO",    float(totSospesi.totLegnano)      ],
+                     ["NUOVI SOSPESI SOMMA",      float(totSospesi.totSommaLombardo)],
+                     ["NUOVI SOSPESI AGOS",       float(totSospesi.totAgos)         ],
+                     ["NUOVI SOSPESI TUTELA",     float(totSospesi.totTutelaLegale) ]]
 
     # Creazione dataframe PRIMA NOTA
     df_PrimaNota = pd.DataFrame(listPrimaNota)
+    df_PrimaNotaSospesiVecchi = pd.DataFrame(listSospesiVecchi)
 
     for i in range(0, len(dataExcel)):
         if(dataExcel.values[i][DATA] == 'DATA'):
@@ -110,7 +118,8 @@ def writeSospesi_inPrimaNota(totSospesi, filePathnameToWrite, dateFromSospesi):
     # df_Generali.style.apply(lambda x: x.map(highlight_if_FinConsumo), axis=None)
 
     with pd.ExcelWriter(filePathnameToWrite, engine ="openpyxl", mode='a', if_sheet_exists='overlay') as writer:
-        df_PrimaNota.to_excel(writer, index = False, columns = [10, 12, 13], header = False, sheet_name = sheetNamePrimaNota, startrow = rowData+37, startcol = 10)    # 10 = 'K'
+        df_PrimaNotaSospesiVecchi.to_excel(writer, index = False, header = False, sheet_name = sheetNamePrimaNota, startrow = rowData+37, startcol = 10)    # 10 = 'K'
+        df_PrimaNota.to_excel(writer, index = False, header = False, sheet_name = sheetNamePrimaNota, startrow = rowData+37, startcol = 12)    # 12 = 'M'
 
 
 

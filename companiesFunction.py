@@ -688,7 +688,10 @@ def readSospesiFromExcel(fileToWrite):
         if(dataSospesiExcel.isnull().iat[i, DATA] == False and dataSospesiExcel.iat[i, DATA] != "DATA" and dataSospesiExcel.iat[i, DATA] != "TOTALE" ):
             # Se la riga i-esima ha una data, un importo diverso da nullo, e "NO" nella colonna "Pagato", allora salvo tale riga nel buffer
             if(isinstance(dataSospesiExcel.iat[i, DATA], datetime.datetime) or isinstance(dataSospesiExcel.iat[i, DATA], datetime.date) or isinstance(datetime.datetime.strptime(dataSospesiExcel.iat[i, DATA], "%d/%m/%Y"), datetime.datetime)):
-                if(dataSospesiExcel.isnull().iat[i, IMPORTO] == False): # and dataSospesiExcel.iat[i, PAGATO].upper() == "NO"):
+                if(dataSospesiExcel.iat[i, NOTE] == "Eseguito"):
+                    # Se trovo la stringa "Eseguito" vado alla tabella successiva, ossia a quella relativa alla data successiva
+                    i += SIZEOF_SINGLE_TABLE_SOSPESI
+                elif(dataSospesiExcel.isnull().iat[i, IMPORTO] == False): # and dataSospesiExcel.iat[i, PAGATO].upper() == "NO"):
                     if(previousDate != dataSospesiExcel.iat[i, DATA]):      # Se la data corrente e' diversa da quella precedente vuol dire che sto salvando un nuovo record della listSospesiNew
                         # if(len(listSospesiNew) == 0):   # Per non fare l'append quanto si ha totSospesiNew tutta a 0 all'inizio
                         if(totSospesiNew.date != datetime.date(2024, 1, 1)):    # Per non fare l'append quanto si ha totSospesiNew tutta a 0 all'inizio
@@ -712,13 +715,9 @@ def readSospesiFromExcel(fileToWrite):
                     
                     updateAgencyTotaleSospesi(totSospesiNew, dataSospesiExcel.iat[i, IMPORTO], dataSospesiExcel.iat[i, AGENZIA])
                 else:
-                    if(dataSospesiExcel.iat[i, NOTE] == "Eseguito"):
-                        # Se trovo la stringa "Eseguito" vado alla tabella successiva, ossia a quella relativa alla data successiva
-                        i += SIZEOF_SINGLE_TABLE_SOSPESI
-                    else:
-                        # Non c'e' un importo e non c'e' la stringa "Eseguito", quindi e' una nuova tabella che sto analizzando, quindi salvo la riga in cui poi andare a scrivere la stringa "Eseguito" se e solo se la data della tabella che sto analizzando e' precedente o coincidente con la data attuale
-                        if(dataSospesiExcel.iat[i, DATA] <= todayDate):
-                            indexRowExecuted.append(i+1)
+                    # Non c'e' un importo e non c'e' la stringa "Eseguito", quindi e' una nuova tabella che sto analizzando, quindi salvo la riga in cui poi andare a scrivere la stringa "Eseguito" se e solo se la data della tabella che sto analizzando e' precedente o coincidente con la data attuale
+                    if(dataSospesiExcel.iat[i, DATA] <= todayDate):
+                        indexRowExecuted.append(i+1)
 
     # Aggiungo l'ultimo record alla list dei NUOVI SOSPESI
     listSospesiNew.append(totSospesiNew)
