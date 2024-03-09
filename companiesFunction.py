@@ -5,6 +5,7 @@ import datetime
 import re
 import os
 import copy
+import time
 
 from classDefinition import TotaleSospesiNew_Date
 from auxiliaryFunction import *
@@ -669,8 +670,8 @@ def readSospesiFromExcel(fileToWrite):
     PAGATO = int(3)
     NOTE = int(4)
 
-    # Inserisco 40 e non 50 per non saltare troppe righe per precauzione
-    SIZEOF_SINGLE_TABLE_SOSPESI = int(40)
+    # Inserisco 45 e non 50 per non saltare troppe righe per precauzione
+    SIZEOF_SINGLE_TABLE_SOSPESI = int(45)
 
     previousDate = datetime.date(2024, 1, 1)    # Data di default
 
@@ -683,14 +684,15 @@ def readSospesiFromExcel(fileToWrite):
 
     # Analizzo tutti i dati caricati dal foglio 'SOSPESI' per andare a creare i NUOVI SOSPESI per ogni data.
     # Salvo anche gli indici di tutte le righe nel foglio 'SOSPESI' in cui andare poi a scrivere la stringa "Eseguito" in modo tale da non considerare piu' la tabella di quella data nelle future esecuzioni dell'applicazione.
-    for i in range(0, len(dataSospesiExcel)):
+    i = 0
+    while(i < len(dataSospesiExcel)):
         # Controllo prima che il dato alla riga i-esima non sia vuoto
         if(dataSospesiExcel.isnull().iat[i, DATA] == False and dataSospesiExcel.iat[i, DATA] != "DATA" and dataSospesiExcel.iat[i, DATA] != "TOTALE" ):
             # Se la riga i-esima ha una data, un importo diverso da nullo, e "NO" nella colonna "Pagato", allora salvo tale riga nel buffer
             if(isinstance(dataSospesiExcel.iat[i, DATA], datetime.datetime) or isinstance(dataSospesiExcel.iat[i, DATA], datetime.date) or isinstance(datetime.datetime.strptime(dataSospesiExcel.iat[i, DATA], "%d/%m/%Y"), datetime.datetime)):
                 if(dataSospesiExcel.iat[i, NOTE] == "Eseguito"):
                     # Se trovo la stringa "Eseguito" vado alla tabella successiva, ossia a quella relativa alla data successiva
-                    i += SIZEOF_SINGLE_TABLE_SOSPESI
+                    i += SIZEOF_SINGLE_TABLE_SOSPESI - 1    # -1 in quanto alla fine del while loop c'e' un i += 1
                 elif(dataSospesiExcel.isnull().iat[i, IMPORTO] == False): # and dataSospesiExcel.iat[i, PAGATO].upper() == "NO"):
                     if(previousDate != dataSospesiExcel.iat[i, DATA]):      # Se la data corrente e' diversa da quella precedente vuol dire che sto salvando un nuovo record della listSospesiNew
                         # if(len(listSospesiNew) == 0):   # Per non fare l'append quanto si ha totSospesiNew tutta a 0 all'inizio
@@ -719,7 +721,9 @@ def readSospesiFromExcel(fileToWrite):
                     if(dataSospesiExcel.iat[i, DATA] <= todayDate):
                         indexRowExecuted.append(i+1)
 
-    # Aggiungo l'ultimo record alla list dei NUOVI SOSPESI
+        i += 1
+
+    # Aggiungo l'ultimo record alla list dei NUOVI SOSPESI - bug: se non trova nulla va comunque a fare un append di dati vuoti per la data 01/01/2024 andando a scrivere tali dati nel foglio 'PRIMA NOTA'
     listSospesiNew.append(totSospesiNew)
 
     strExecuted = list(["Eseguito"])
@@ -727,6 +731,7 @@ def readSospesiFromExcel(fileToWrite):
 
     for i in range(0, len(listSospesiNew)):
         writeSospesi_inPrimaNota(listSospesiNew[i], fileToWrite, listSospesiNew[i].date)
+        time.sleep(2)
 
     for i in range(0, len(indexRowExecuted)):
         with pd.ExcelWriter(fileToWrite, engine ="openpyxl", mode='a', if_sheet_exists='overlay') as writer:

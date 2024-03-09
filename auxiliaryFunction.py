@@ -114,7 +114,7 @@ def writeSospesi_inPrimaNota(totSospesi, filePathnameToWrite, dateFromSospesi):
                 print("ERROR")
 
 
-    print("Copia e salvataggio dati nel foglio 'PRIMA NOTA' della data ", dateFromSospesi.date(), " in esecuzione, attendere ...\n")
+    print("Copia e salvataggio dati nel foglio 'PRIMA NOTA' della data ", dateFromSospesi, " in esecuzione, attendere ...\n")
     # df_Generali.style.apply(lambda x: x.map(highlight_if_FinConsumo), axis=None)
 
     with pd.ExcelWriter(filePathnameToWrite, engine ="openpyxl", mode='a', if_sheet_exists='overlay') as writer:
