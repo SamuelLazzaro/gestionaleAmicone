@@ -829,7 +829,7 @@ def readSospesiFromExcel(fileToWrite, lastDatetime):
         with pd.ExcelWriter(fileToWrite, engine ="openpyxl", mode='a', if_sheet_exists='overlay') as writer:
             df_sospesiExecuted.to_excel(writer, index = False, header = False, sheet_name = sheetNameSospesi, startrow = indexRowExecuted[i], startcol = 10)    # 10 = 'J' -> NOTE
 
-        print("", end=f"\rNumero di righe mancanti in cui scrivere la stringa 'Eseguito': {len(indexRowExecuted) - i}\n")
+        print("", end=f"\rNumero di righe mancanti in cui scrivere la stringa 'Eseguito': {len(indexRowExecuted) - i}")
 
 
 
