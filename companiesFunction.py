@@ -15,6 +15,11 @@ sheetNameSospesi = 'SOSPESI'
 DATA_SOSPESI    = int(0)
 IMPORTO_SOSPESI = int(1)
 
+ROW_INDEX_TOT_GENERALI = int(2)
+ROW_INDEX_TOT_CATTOLICA = int(4)
+ROW_INDEX_TOT_TUTELA = int(6)
+ROW_INDEX_TOT_UCA = int(8)
+
 dateFormat = "%d/%m/%Y"
 
 def highlight_if_FinConsumo(val):
@@ -31,34 +36,36 @@ def highlight_if_FinConsumo(val):
 def readFromGenerali(fileName_Generali, fileGenerali_read, fileToWrite, totale_sospesi_nuovi):
     sheetNameGenerali = 'BONIFICI GENERALI '    # ATTENZIONE allo spazio finale nel sheet name
 
-    year_month_day = re.findall('\\d{4}-\\d{2}-\\d{2}', fileGenerali_read)[0]
+    # year_month_day = re.findall('\\d{4}-\\d{2}-\\d{2}', fileGenerali_read)[0]
 
-    year = year_month_day[0:4]
-    month = year_month_day[5:7]
-    day = year_month_day[8:10]
+    # year = year_month_day[0:4]
+    # month = year_month_day[5:7]
+    # day = year_month_day[8:10]
 
     findImporto = False
     # read by default 1st sheet of an excel file
     # ATTENZIONE: per come e' fatto attualmente il file di GENERALI vi sono molte righe prima della tabella con i dati, quindi posso non considerare il parametro 'header' nella read_excel.
     # Dovesse pero' cambiare il formato come quello di CATTOLICA bisognera' probabilmente modificare il funzionamento di fileImporto, in quanto se non viene
     # utilizzato il parametro 'header' vengono letti tutti i dati da dopo la riga di intestazione del file excel.
-    dataframe1 = pd.read_excel(fileGenerali_read, usecols='A,B,H,J,K,P')
+    dataframe1 = pd.read_excel(fileGenerali_read, usecols='A,B,C,H,J,K,P')
 
     print("\nLettura file GENERALI eseguita correttamente.\n")
 
     # A -> 0 : NUMERO POLIZZA
     # B -> 1 : ANAGRAFICA (CONTRAENTE)
-    # H -> 2 : MODALITA' PAGAMENTO
-    # J -> 3 : IMPORTO
-    # K -> 4 : COLLABORATORE
-    # P -> 5 : PROVVIGIONI
+    # C -> 2 : DATA DI REGISTRAZIONE
+    # H -> 3 : MODALITA' PAGAMENTO
+    # J -> 4 : IMPORTO
+    # K -> 5 : COLLABORATORE
+    # P -> 6 : PROVVIGIONI
     
     NUM_POLIZZA = int(0)
     ANAGRAFICA = int(1)
-    MOD_PAGAMENTO = int(2)
-    IMPORTO = int(3)
-    COLLABORATORE = int(4)
-    PROVVIGIONI = int(5)
+    DATA_REGISTRAZIONE = int(2)
+    MOD_PAGAMENTO = int(3)
+    IMPORTO = int(4)
+    COLLABORATORE = int(5)
+    PROVVIGIONI = int(6)
 
     generali_nr_polizza = []
     generali_anagrafica = []
@@ -74,11 +81,14 @@ def readFromGenerali(fileName_Generali, fileGenerali_read, fileToWrite, totale_s
     sospesi_generali_metodo_pagamento = []
     sospesi_generali_pagato = []
 
+    totale_incassi = 0
     totale_provvigioni = 0
 
-    print("\nData inserita: ", day, '-', month, '-', year)
+    # Data di registrazione
+    dateToCompare = dataframe1.iat[0, DATA_REGISTRAZIONE]
 
-    dateToCompare = datetime.date(int(year), int(month), int(day))
+    if(isinstance(dateToCompare, datetime.datetime) == False):
+        dateToCompare = datetime.datetime.strptime(dateToCompare, dateFormat)
 
     for i in range(0, len(dataframe1)):
 
@@ -103,18 +113,22 @@ def readFromGenerali(fileName_Generali, fileGenerali_read, fileToWrite, totale_s
                 condition = (dataframe1.iat[i, IMPORTO] > 0) or (dataframe1.iat[i, IMPORTO] > 0.0)
 
             if(condition):
+
                 # Modifico l'importo del singolo versamento in un float
-                if(isinstance(dataframe1.iat[i, IMPORTO], str)):
-                    dataframe1.iat[i, IMPORTO] = dataframe1.iat[i, IMPORTO].replace('.', '')
-                    importo_versamento = dataframe1.iat[i, IMPORTO].replace(',', '.')
-                    importo_versamento = float(importo_versamento)
-                else:
-                    importo_versamento = float(dataframe1.iat[i, IMPORTO])
+                importo_versamento = convertToFloat(dataframe1.iat[i, IMPORTO])
+
+                # Modifico l'importo della singola provvigione in un float
+                importo_provvigione = convertToFloat(dataframe1.iat[i, PROVVIGIONI])
+
+                # Per il totale degli INCASSI e delle PROVVIGIONI considero tutti i metodi di pagamento tranne che 'MOBILE POS'
+                if(dataframe1.iat[i, MOD_PAGAMENTO] != 'MOBILE POS'):
+                    totale_incassi += importo_versamento
+                    totale_provvigioni += importo_provvigione
 
                 if (dataframe1.iat[i, MOD_PAGAMENTO] == 'BONIFICO'):
                     # BONIFICO con FINANZIAMENTO A CONSUMO GENERALI -> da inserire nei SOSPESI
                     if(dataframe1.iat[i, NUM_POLIZZA].find('Fin. Consumo') != -1):
-                        dateString = dateToCompare.strftime("%d/%m/%Y")
+                        dateString = dateToCompare.strftime(dateFormat)
                         sospesi_generali_data.append(dateString)
                         sospesi_generali_nr_polizza.append(dataframe1.iat[i, NUM_POLIZZA])
                         sospesi_generali_anagrafica.append(dataframe1.iat[i, ANAGRAFICA])
@@ -125,7 +139,7 @@ def readFromGenerali(fileName_Generali, fileGenerali_read, fileToWrite, totale_s
                         sospesi_generali_compagnia.append('GENERALI')
                         sospesi_generali_collaboratore.append(dataframe1.iat[i, COLLABORATORE])
                         sospesi_generali_pagato.append('No')
-                        totale_provvigioni += dataframe1.iat[i, PROVVIGIONI]
+                        
                         updateAgencyTotaleSospesi(totale_sospesi_nuovi, importo_versamento, agenzia)
                         continue        # Vado all'iterazione successiva del while loop
 
@@ -136,7 +150,7 @@ def readFromGenerali(fileName_Generali, fileGenerali_read, fileToWrite, totale_s
 
                 # CONTANTI o ASSEGNO BANCARIO/POSTALE GENERALI
                 elif (dataframe1.iat[i, MOD_PAGAMENTO] == 'CONTANTI' or dataframe1.iat[i, MOD_PAGAMENTO].find('ASSEGNO') != -1):
-                        dateString = dateToCompare.strftime("%d/%m/%Y")
+                        dateString = dateToCompare.strftime(dateFormat)
                         sospesi_generali_data.append(dateString)
                         sospesi_generali_nr_polizza.append(dataframe1.iat[i, NUM_POLIZZA])
                         sospesi_generali_anagrafica.append(dataframe1.iat[i, ANAGRAFICA])
@@ -147,25 +161,13 @@ def readFromGenerali(fileName_Generali, fileGenerali_read, fileToWrite, totale_s
                         sospesi_generali_compagnia.append('GENERALI')
                         sospesi_generali_collaboratore.append(dataframe1.iat[i, COLLABORATORE])
                         sospesi_generali_pagato.append('No')
-                        totale_provvigioni += dataframe1.iat[i, PROVVIGIONI]
+                        
                         updateAgencyTotaleSospesi(totale_sospesi_nuovi, importo_versamento, agenzia)
                 
 
         if(dataframe1.isnull().iat[i, NUM_POLIZZA] == False and dataframe1.iat[i, ANAGRAFICA] == 'ANAGRAFICA' and findImporto == False):
             # Se trovo la stringa 'ANAGRAFICA' vuol dire che dal ciclo successivo inizio a salvare tutti i dati
             findImporto = True
-
-    
-    # Calcolo totale dei sospesi del giorno da sommare al totale dei sospesi precedenti in PRIMA_NOTA
-    # totale_sospesi = 0
-
-    # for i in range(0, len(sospesi_generali_importo)):
-    #     print(float(sospesi_generali_importo[i]))
-
-    #     totale_sospesi += float(sospesi_generali_importo[i])
-
-    # print('Totale sospesi del giorno = ', totale_sospesi)
-
 
     # Creazione dataframe BONIFICI
     final_BonificiGenerali = list(zip(generali_importo, generali_nr_polizza, generali_anagrafica))
@@ -175,15 +177,22 @@ def readFromGenerali(fileName_Generali, fileGenerali_read, fileToWrite, totale_s
     final_SospesiGenerali = list(zip(sospesi_generali_data, sospesi_generali_importo, sospesi_generali_nr_polizza, sospesi_generali_anagrafica, sospesi_generali_agenzia, sospesi_generali_compagnia, sospesi_generali_collaboratore, sospesi_generali_metodo_pagamento, sospesi_generali_pagato))
     df_SospesiGenerali = pd.DataFrame(final_SospesiGenerali)
 
-    # Lettura dati presenti nel file excel per i fogli sheetNameGenerali e sheetNameSospesi
+    # Creazione dataframe INCASSI e PROVVIGIONI GENERALI
+    listIncassiProvvigioniGenerali = [["Incassi GENERALI", totale_incassi]]
+    listIncassiProvvigioniGenerali.append(["Provvigioni GENERALI", totale_provvigioni])
+
+    df_IncassiProvvigioniGenerali = pd.DataFrame(listIncassiProvvigioniGenerali)
+
+    # Lettura dati presenti nel file excel per i fogli sheetNameGenerali, sheetNameSospesi e sheetNamePrimaNota
     datareadBonifici = pd.read_excel(fileToWrite, sheet_name = sheetNameGenerali, usecols='A')
     datareadSospesi = pd.read_excel(fileToWrite, sheet_name = sheetNameSospesi, usecols='A,B')
+    datareadPrimaNota = pd.read_excel(fileToWrite, sheet_name = sheetNamePrimaNota, usecols = 'A')
 
     BonificiRowData = 0
     SospesiRowData = 0
 
     # In questo caso e' una datetime.datetime
-    newDateToCompare = datetime.datetime(int(year), int(month), int(day), 0, 0)
+    newDateToCompare = dateToCompare
 
     # Ricerca della riga nel foglio 'BONIFICI GENERALI ' in cui andare a salvare i dati corrispondenti alla data newDateToCompare
     for i in range(0, len(datareadBonifici)):
@@ -204,12 +213,15 @@ def readFromGenerali(fileName_Generali, fileGenerali_read, fileToWrite, totale_s
         if(datareadSospesi.iat[i, DATA_SOSPESI] == newDateToCompare):
             dateFound = True
 
+    # Ricerca della riga nel foglio 'PRIMA NOTA' in cui andare a salvare i dati corrispondenti alla data newDateToCompare
+    PrimaNotaRowData = findPrimaNotaRow_forIncassiProvvigioni(datareadPrimaNota, newDateToCompare)
+
     print("Copia e salvataggio dati in esecuzione, attendere ...\n")
-    # df_Generali.style.apply(lambda x: x.map(highlight_if_FinConsumo), axis=None)
 
     with pd.ExcelWriter(fileToWrite, engine ="openpyxl", mode='a', if_sheet_exists='overlay') as writer:
         df_BonificiGenerali.to_excel(writer, index = False, header = False, sheet_name = sheetNameGenerali, startrow = BonificiRowData+1, startcol = 1)
         df_SospesiGenerali.to_excel(writer, index = False, header = False, sheet_name = sheetNameSospesi, startrow = SospesiRowData+1, startcol = 0)
+        df_IncassiProvvigioniGenerali.to_excel(writer, index = False, header = False, sheet_name = sheetNamePrimaNota, startrow = PrimaNotaRowData+ROW_INDEX_TOT_GENERALI, startcol = 2)        # 2 -> 'C' : DESCRIZIONE
 
     print("Copia dei dati del file ", fileName_Generali, " di GENERALI terminata.\n")
     
@@ -230,14 +242,14 @@ def readFromCattolica(fileName_Cattolica, pathName_read, fileToWrite, totale_sos
 
     sheetNameCattolica = 'BONIFICI CATTOLICA'
 
-    day_month_year = re.findall('\\d{2}_\\d{2}_\\d{4}', pathName_read)[0]
+    # day_month_year = re.findall('\\d{2}_\\d{2}_\\d{4}', pathName_read)[0]
 
-    day = day_month_year[0:2]
-    month = day_month_year[3:5]
-    year = day_month_year[6:10]
+    # day = day_month_year[0:2]
+    # month = day_month_year[3:5]
+    # year = day_month_year[6:10]
     
     # read sheet 'Incassi' of CATTOLICA excel file
-    dataframe1 = pd.read_excel(pathName_read, sheet_name='Incassi', usecols='A,E,H,I,K,Z')
+    dataframe1 = pd.read_excel(pathName_read, sheet_name='Incassi', usecols='A,E,H,I,K,Y,Z')
     # Non avendo inserito il parametro 'header' nella read_excel, la 1^a riga di dataframe1 contiene gia' i dati
     print("\nLettura file CATTOLICA eseguita correttamente.")
 
@@ -246,14 +258,16 @@ def readFromCattolica(fileName_Cattolica, pathName_read, fileToWrite, totale_sos
     # H -> 2 : IMPORTO PREMIO
     # I -> 3 : PROVVIGIONI
     # K -> 4 : MODALITA' PAGAMENTO
-    # Z -> 5 : COLLABORATORE
+    # Y -> 5 : DATA FOGLIO CASSA
+    # Z -> 6 : COLLABORATORE
 
     CONTRAENTE      = int(0)
     NUM_POLIZZA     = int(1)
     IMPORTO         = int(2)
     PROVVIGIONI     = int(3)
     MOD_PAGAMENTO   = int(4)
-    COLLABORATORE   = int(5)
+    DATA_FOGLIO_CASSA = int(5)
+    COLLABORATORE   = int(6)
 
     cattolica_contraente = []
     cattolica_nr_polizza = []
@@ -269,11 +283,14 @@ def readFromCattolica(fileName_Cattolica, pathName_read, fileToWrite, totale_sos
     sospesi_cattolica_metodo_pagamento = []
     sospesi_cattolica_pagato = []
 
+    totale_incassi = 0
     totale_provvigioni = 0
 
-    print("\nData inserita: ", day, '-', month, '-', year)
+    dateToCompare = dataframe1.iat[0, DATA_FOGLIO_CASSA]
 
-    dateToCompare = datetime.date(int(year), int(month), int(day))
+    if(isinstance(dateToCompare, datetime.datetime) == False):
+        dateToCompare = datetime.datetime.strptime(dateToCompare, dateFormat)
+    
 
     for i in range(0, len(dataframe1)):
         if(dataframe1.isnull().iat[i, CONTRAENTE] == False and dataframe1.isnull().iat[i, NUM_POLIZZA] == False and dataframe1.isnull().iat[i, IMPORTO] == False):
@@ -298,42 +315,48 @@ def readFromCattolica(fileName_Cattolica, pathName_read, fileToWrite, totale_sos
                 condition = (dataframe1.iat[i, IMPORTO] > 0) or (dataframe1.iat[i, IMPORTO] > 0.0)
 
             if(condition):
+                # Variabile booleana utilizzata per sapere se aggiornare i valori di PROVVIGIONI e INCASSI nel caso in cui il metodo di pagamento sia diverso da 'MOBILE POS' che per CATTOLICA non so come si chiama
+                updateProvvigioniIncassi = False
+
                 # Modifico l'importo del singolo versamento in un float
-                if(isinstance(dataframe1.iat[i, IMPORTO], str)):
-                    dataframe1.iat[i, IMPORTO] = dataframe1.iat[i, IMPORTO].replace('.', '')
-                    importo_versamento = dataframe1.iat[i, IMPORTO].replace(',', '.')
-                    importo_versamento = float(importo_versamento)
-                else:
-                    importo_versamento = float(dataframe1.iat[i, IMPORTO])
+                importo_versamento = convertToFloat(dataframe1.iat[i, IMPORTO])
+                # Modifico l'importo della singola provvigione in un float
+                importo_provvigione = convertToFloat(dataframe1.iat[i, PROVVIGIONI])
 
                 # BONIFICI CATTOLICA
                 if(dataframe1.iat[i, MOD_PAGAMENTO] == 'Bonifico su CC di Agenzia'):
+                    updateProvvigioniIncassi = True
                     cattolica_contraente.append(dataframe1.iat[i, 0])
                     cattolica_nr_polizza.append(dataframe1.iat[i, NUM_POLIZZA])
                     cattolica_importo.append(importo_versamento)
 
                 # SOSPESI CATTOLICA: ASSEGNO BANCARIO, CONTANTI, FINANZIAMENTO AL CONSUMO
                 elif(dataframe1.iat[i, MOD_PAGAMENTO].find('Assegno') != -1 or dataframe1.iat[i, MOD_PAGAMENTO] == 'Contante' or dataframe1.iat[i, MOD_PAGAMENTO] == 'Bonifico su CC di Direzione'):
-                        dateString = dateToCompare.strftime("%d/%m/%Y")
-                        sospesi_cattolica_data.append(dateString)
-                        sospesi_cattolica_nr_polizza.append(dataframe1.iat[i, NUM_POLIZZA])
-                        sospesi_cattolica_anagrafica.append(dataframe1.iat[i, CONTRAENTE])
-                        sospesi_cattolica_metodo_pagamento.append(dataframe1.iat[i, MOD_PAGAMENTO])
-                        sospesi_cattolica_importo.append(importo_versamento)
-                        if(dataframe1.iat[i, MOD_PAGAMENTO] == 'Bonifico su CC di Direzione'):
-                            agenzia = "AGOS"
-                            sospesi_cattolica_agenzia.append(agenzia)
-                            updateAgencyTotaleSospesi(totale_sospesi_nuovi, importo_versamento, agenzia)
-                        else:
-                            agenzia = findAgencyFromSubagent(dataframe1.iat[i, COLLABORATORE])
-                            sospesi_cattolica_agenzia.append(agenzia)
-                            updateAgencyTotaleSospesi(totale_sospesi_nuovi, importo_versamento, agenzia)
+                    updateProvvigioniIncassi = True
+                    dateString = dateToCompare.strftime(dateFormat)
+                    sospesi_cattolica_data.append(dateString)
+                    sospesi_cattolica_nr_polizza.append(dataframe1.iat[i, NUM_POLIZZA])
+                    sospesi_cattolica_anagrafica.append(dataframe1.iat[i, CONTRAENTE])
+                    sospesi_cattolica_metodo_pagamento.append(dataframe1.iat[i, MOD_PAGAMENTO])
+                    sospesi_cattolica_importo.append(importo_versamento)
+                    if(dataframe1.iat[i, MOD_PAGAMENTO] == 'Bonifico su CC di Direzione'):
+                        agenzia = "AGOS"
+                        sospesi_cattolica_agenzia.append(agenzia)
+                        updateAgencyTotaleSospesi(totale_sospesi_nuovi, importo_versamento, agenzia)
+                    else:
+                        agenzia = findAgencyFromSubagent(dataframe1.iat[i, COLLABORATORE])
+                        sospesi_cattolica_agenzia.append(agenzia)
+                        updateAgencyTotaleSospesi(totale_sospesi_nuovi, importo_versamento, agenzia)
 
-                        sospesi_cattolica_compagnia.append('CATTOLICA')
-                        sospesi_cattolica_collaboratore.append(dataframe1.iat[i, COLLABORATORE])
-                        sospesi_cattolica_pagato.append('No')
+                    sospesi_cattolica_compagnia.append('CATTOLICA')
+                    sospesi_cattolica_collaboratore.append(dataframe1.iat[i, COLLABORATORE])
+                    sospesi_cattolica_pagato.append('No')
 
-                        totale_provvigioni += dataframe1.iat[i, PROVVIGIONI]
+                # Per il totale degli INCASSI e delle PROVVIGIONI considero tutti i metodi di pagamento tranne che 'MOBILE POS' che non so come si chiami su CATTOLICA
+                if(updateProvvigioniIncassi == True):
+                    totale_incassi += importo_versamento
+                    totale_provvigioni += importo_provvigione
+
                         
 
 
@@ -345,9 +368,16 @@ def readFromCattolica(fileName_Cattolica, pathName_read, fileToWrite, totale_sos
     final_SospesiCattolica = list(zip(sospesi_cattolica_data, sospesi_cattolica_importo, sospesi_cattolica_nr_polizza, sospesi_cattolica_anagrafica, sospesi_cattolica_agenzia, sospesi_cattolica_compagnia, sospesi_cattolica_collaboratore, sospesi_cattolica_metodo_pagamento, sospesi_cattolica_pagato))
     df_SospesiCattolica = pd.DataFrame(final_SospesiCattolica)
 
+    # Creazione dataframe INCASSI e PROVVIGIONI GENERALI
+    listIncassiProvvigioniCattolica = [["Incassi CATTOLICA", totale_incassi]]
+    listIncassiProvvigioniCattolica.append(["Provvigioni CATTOLICA", totale_provvigioni])
+
+    df_IncassiProvvigioniCattolica = pd.DataFrame(listIncassiProvvigioniCattolica)
+
     # Dal file finale vado a leggere tutte le date presenti nel relativo sheet nella colonna 'A'
     datareadBonifici = pd.read_excel(fileToWrite, sheet_name = sheetNameCattolica, usecols='A')
     datareadSospesi = pd.read_excel(fileToWrite, sheet_name = sheetNameSospesi, usecols='A,B')
+    datareadPrimaNota = pd.read_excel(fileToWrite, sheet_name = sheetNamePrimaNota, usecols='A')
 
     # Converto tutte le date del foglio 'SOSPESI' da formato stringa a formato 'datetime'
     convertStringToDatetime(datareadSospesi, DATA_SOSPESI)
@@ -356,7 +386,7 @@ def readFromCattolica(fileName_Cattolica, pathName_read, fileToWrite, totale_sos
     SospesiRowData = 0
 
     # In questo caso e' una datetime.datetime
-    newDateToCompare = datetime.datetime(int(year), int(month), int(day), 0, 0)
+    newDateToCompare = dateToCompare
 
     # Ricerca numero riga in cui andare a salvare i nuovi record in BONIFICI CATTOLICA
     for i in range(0, len(datareadBonifici)):
@@ -377,12 +407,16 @@ def readFromCattolica(fileName_Cattolica, pathName_read, fileToWrite, totale_sos
         if(datareadSospesi.iat[i, DATA_SOSPESI] == newDateToCompare):
             dateFound = True
 
+    # Ricerca della riga nel foglio 'PRIMA NOTA' in cui andare a salvare i dati corrispondenti alla data newDateToCompare
+    PrimaNotaRowData = findPrimaNotaRow_forIncassiProvvigioni(datareadPrimaNota, newDateToCompare)
+    
     print("Copia e salvataggio dati in esecuzione, attendere ...\n")
 
     with pd.ExcelWriter(fileToWrite, engine ="openpyxl", mode='a', if_sheet_exists='overlay') as writer:
         df_BonificiCattolica.to_excel(writer, index = False, header = False, sheet_name = sheetNameCattolica, startrow = BonificiRowData+1, startcol = 1)
         df_SospesiCattolica.to_excel(writer, index = False, header = False, sheet_name = sheetNameSospesi, startrow = SospesiRowData+1, startcol = 0)
-
+        df_IncassiProvvigioniCattolica.to_excel(writer, index = False, header = False, sheet_name = sheetNamePrimaNota, startrow = PrimaNotaRowData+ROW_INDEX_TOT_CATTOLICA, startcol = 2)      # 2 -> 'C' : DESCRIZIONE
+    
     print("Copia dei dati del file ", fileName_Cattolica, " di CATTOLICA terminata.\n")
 
     #  Rinomino il file di cui ho appena salvato i dati con la desinenza '_checked'
@@ -440,7 +474,13 @@ def readFromTutela(fileName_Tutela, fileTutela_read, fileToWrite, totale_sospesi
     sospesi_tutela_pagato = []
     sospesi_tutela_data = []
 
-    totale_provvigioni = 0
+    totale_IncassiProvvigioni = [[datetime.datetime(2000, 1, 1, 0, 0), 0.0, 0.0]]
+
+    TOT_DATA = int(0)
+    TOT_INCASSI = int(1)
+    TOT_PROVVIGIONI = int(2)
+
+    numberOfDifferentDates = 0
 
     # Converto tutte le date presenti nei dati caricati dal file 'fogliocassa' di TUTELA LEGALE in formato 'datetime'
     convertStringToDatetime(dataframe1, DATA)
@@ -467,16 +507,16 @@ def readFromTutela(fileName_Tutela, fileTutela_read, fileToWrite, totale_sospesi
                 condition = (dataframe1.iat[i, IMPORTO] > 0) or (dataframe1.iat[i, IMPORTO] > 0.0)
 
             if(condition):
+                updateProvvigioniIncassi = False
+
                 # Modifico l'importo del singolo versamento in un float
-                if(isinstance(dataframe1.iat[i, IMPORTO], str)):
-                    dataframe1.iat[i, IMPORTO] = dataframe1.iat[i, IMPORTO].replace('.', '')
-                    importo_versamento = dataframe1.iat[i, IMPORTO].replace(',', '.')
-                    importo_versamento = float(importo_versamento)
-                else:
-                    importo_versamento = float(dataframe1.iat[i, IMPORTO])
+                importo_versamento = convertToFloat(dataframe1.iat[i, IMPORTO])
+                # Modifico l'importo della singola provvigione in un float
+                importo_provvigione = convertToFloat(dataframe1.iat[i, PROVVIGIONI])
 
                 # BONIFICI TUTELA LEGALE
                 if(dataframe1.iat[i, MOD_PAGAMENTO] == 'BB'):
+                    updateProvvigioniIncassi = True
                     tutela_nr_polizza.append(dataframe1.iat[i, NUM_POLIZZA])
                     tutela_anagrafica.append(dataframe1.iat[i, ANAGRAFICA])
                     tutela_importo.append(importo_versamento)
@@ -484,20 +524,36 @@ def readFromTutela(fileName_Tutela, fileTutela_read, fileToWrite, totale_sospesi
 
                 # SOSPESI TUTELA LEGALE: CONTANTI e ASSEGNO BANCARIO (al momento non c'e' il FINANZIAMENTO AL CONSUMO per TUTELA LEGALE)
                 elif(dataframe1.iat[i, MOD_PAGAMENTO] == 'CC' or dataframe1.iat[i, MOD_PAGAMENTO] == 'AB'):
-                        # Al momento il Finanziamento a Consumo (AGOS) non e' possibile con TUTELA LEGALE
-                        dateAs_datetimeType = dataframe1.iat[i, DATA]
-                        sospesi_tutela_data.append(dateAs_datetimeType)
-                        sospesi_tutela_nr_polizza.append(dataframe1.iat[i, NUM_POLIZZA])
-                        sospesi_tutela_anagrafica.append(dataframe1.iat[i, ANAGRAFICA])
-                        sospesi_tutela_metodo_pagamento.append(dataframe1.iat[i, MOD_PAGAMENTO])
-                        sospesi_tutela_importo.append(importo_versamento)
-                        sospesi_tutela_agenzia.append('TUTELA LEGALE')     # sospesi_tutela_agenzia.append(dataframe1.iat[i, COLLABORATORE])
-                        sospesi_tutela_compagnia.append('TUTELA')
-                        sospesi_tutela_collaboratore.append('')
-                        sospesi_tutela_pagato.append('No')
-                        
-                        totale_provvigioni += dataframe1.iat[i, PROVVIGIONI]
-                        updateAgencyTotaleSospesi(totale_sospesi_nuovi, importo_versamento, "TUTELA LEGALE")
+                    updateProvvigioniIncassi = True
+                    # Al momento il Finanziamento a Consumo (AGOS) non e' possibile con TUTELA LEGALE
+                    dateAs_datetimeType = dataframe1.iat[i, DATA]
+                    sospesi_tutela_data.append(dateAs_datetimeType)
+                    sospesi_tutela_nr_polizza.append(dataframe1.iat[i, NUM_POLIZZA])
+                    sospesi_tutela_anagrafica.append(dataframe1.iat[i, ANAGRAFICA])
+                    sospesi_tutela_metodo_pagamento.append(dataframe1.iat[i, MOD_PAGAMENTO])
+                    sospesi_tutela_importo.append(importo_versamento)
+                    sospesi_tutela_agenzia.append('TUTELA LEGALE')     # sospesi_tutela_agenzia.append(dataframe1.iat[i, COLLABORATORE])
+                    sospesi_tutela_compagnia.append('TUTELA')
+                    sospesi_tutela_collaboratore.append('')
+                    sospesi_tutela_pagato.append('No')
+                    
+                    updateAgencyTotaleSospesi(totale_sospesi_nuovi, importo_versamento, "TUTELA LEGALE")
+
+                # Per il totale degli INCASSI e delle PROVVIGIONI considero tutti i metodi di pagamento tranne che 'MOBILE POS' che non so come si chiami su CATTOLICA
+                if(updateProvvigioniIncassi == True):
+                    if(totale_IncassiProvvigioni[0][TOT_DATA] == datetime.datetime(2000, 1, 1, 0, 0)):
+                            totale_IncassiProvvigioni = [[dataframe1.iat[i, DATA], importo_versamento, importo_provvigione]]
+                    else:
+                        if(dataframe1.iat[i, DATA] != totale_IncassiProvvigioni[numberOfDifferentDates][TOT_DATA]):
+                            # Se la data che sto analizzando dal file di TUTELA LEGALE e' diversa dall'ultima salvata nella list totale_IncassiProvvigioni, allora sto analizzando una nuova data.
+                            # In questo caso stiamo facendo l'assunzione che tutte le date presenti nel file di TUTELA LEGALE siano tutte in ordine crescente/decrescente
+                            totale_IncassiProvvigioni.append([dataframe1.iat[i, DATA], importo_versamento, importo_provvigione])
+                            numberOfDifferentDates += 1
+                            
+                        else:
+                            totale_IncassiProvvigioni[numberOfDifferentDates][TOT_INCASSI] += importo_versamento
+                            totale_IncassiProvvigioni[numberOfDifferentDates][TOT_PROVVIGIONI] += importo_provvigione
+
 
         if(dataframe1.isnull().iat[i, NUM_POLIZZA] == False and findImporto == False):
             # Se trovo la stringa 'ANAGRAFICA' vuol dire che dal ciclo successivo inizio a salvare tutti i dati
@@ -511,8 +567,22 @@ def readFromTutela(fileName_Tutela, fileTutela_read, fileToWrite, totale_sospesi
     final_SospesiTutela = list(zip(sospesi_tutela_data, sospesi_tutela_importo, sospesi_tutela_nr_polizza, sospesi_tutela_anagrafica, sospesi_tutela_agenzia, sospesi_tutela_compagnia, sospesi_tutela_collaboratore, sospesi_tutela_metodo_pagamento, sospesi_tutela_pagato))
     df_SospesiTutela = pd.DataFrame(final_SospesiTutela)
 
+    # Creazione list per TOTALI INCASSI e PROVVIGIONI TUTELA LEGALE
+    # listIncassi = list()
+    # listProvvigioni = list()
+
+    # for loc_date, tot_incassi, tot_provvigioni in totale_IncassiProvvigioni:
+    #     listIncassi.append([loc_date, tot_incassi])
+    #     listProvvigioni.append([loc_date, tot_provvigioni])
+
+    # # Creazione dataframe INCASSI e PROVVIGIONI
+    # df_IncassiTutela = pd.DataFrame(listIncassi)
+    # df_ProvvigioniTutela = pd.DataFrame(listProvvigioni)
+    
+
     datareadTutela = pd.read_excel(fileToWrite, sheet_name = sheetNameTutela, usecols='A')
     datareadSospesi = pd.read_excel(fileToWrite, sheet_name = sheetNameSospesi, usecols='A,B')
+    datareadPrimaNota = pd.read_excel(fileToWrite, sheet_name = sheetNamePrimaNota, usecols='A')
 
     # Converto tutte le date presenti nei dati caricati dal foglio 'SOSPESI' in formato 'datetime'
     convertStringToDatetime(datareadSospesi, DATA_SOSPESI)
@@ -553,6 +623,12 @@ def readFromTutela(fileName_Tutela, fileTutela_read, fileToWrite, totale_sospesi
                         SospesiRowData[1].append(df_SospesiTutela.iat[j, DATA_SOSPESI])
                         break
 
+
+    # Ricerca della riga nel foglio 'PRIMA NOTA' in cui andare a salvare i dati corrispondenti alla data newDateToCompare
+    PrimaNotaRowData = []
+
+    for i in range(0, len(totale_IncassiProvvigioni)):
+        PrimaNotaRowData.append(findPrimaNotaRow_forIncassiProvvigioni(datareadPrimaNota, totale_IncassiProvvigioni[i][TOT_DATA]))
 
     print("Copia e salvataggio dati in esecuzione, attendere ...\n")
 
@@ -600,6 +676,18 @@ def readFromTutela(fileName_Tutela, fileTutela_read, fileToWrite, totale_sospesi
         with pd.ExcelWriter(fileToWrite, engine ="openpyxl", mode='a', if_sheet_exists='overlay') as writer:
             final_dfSospesi.to_excel(writer, index = False, header = False, sheet_name = sheetNameSospesi, startrow = SospesiRowData[0][i] + 1, startcol = 0)
 
+    
+    # Salvataggio TOTALE INCASSI TUTELA LEGALE nel foglio 'PRIMA NOTA'
+    for i in range(len(PrimaNotaRowData)-1, -1, -1):
+        listIncassiProvvigioniTutela = [["Incassi TUTELA LEGALE", totale_IncassiProvvigioni[i][TOT_INCASSI]]]
+        listIncassiProvvigioniTutela.append(["Provvigioni TUTELA LEGALE", totale_IncassiProvvigioni[i][TOT_PROVVIGIONI]])
+        
+        df_IncassiProvvigioniTutela = pd.DataFrame(listIncassiProvvigioniTutela)
+
+        with pd.ExcelWriter(fileToWrite, engine ="openpyxl", mode='a', if_sheet_exists='overlay') as writer:
+            df_IncassiProvvigioniTutela.to_excel(writer, index = False, header = False, sheet_name = sheetNamePrimaNota, startrow = PrimaNotaRowData[i]+ROW_INDEX_TOT_TUTELA, startcol = 2)
+
+            
     print("Copia dei dati del file ", fileName_Tutela, " di TUTELA terminata.\n")
     
     #  Rinomino il file di cui ho appena salvato i dati con la desinenza '_checked'
@@ -647,7 +735,7 @@ def renameFileChecked(pathFileName):
 # Legge tutti i dati nel foglio SOSPESI e va a scrivere in tutte le tabelle del foglio PRIMA NOTA i relativi sospesi del giorno
 # ATTENZIONE perche' per come e' fatto adesso va a fare questo lavoro per tutti i giorni, anche per quelli che erano gia' stati fatti in precedenza.
 # Bisogna quindi ottimizzare il tutto per far eseguire questa funzione solamente per i giorni di cui non sono stati ancora scritti i SOSPESI NUOVI
-def readSospesiFromExcel(fileToWrite):
+def readSospesiFromExcel(fileToWrite, lastDatetime):
     sheetNameSospesi = "SOSPESI"
 
     # Caricamento dei dati dal foglio 'SOSPESI'
@@ -679,6 +767,7 @@ def readSospesiFromExcel(fileToWrite):
     todayDate = todayDate.replace(hour = 0, minute = 0, second = 0, microsecond = 0)
 
     indexRowExecuted = []   # Lista che contiene tutti gli indici delle righe del foglio 'SOSPESI' in cui andare a scrivere la stringa "Eseguito" per non considerare piu' i dati di quel giorno per la scrittura dei NUOVI SOSPESI nel foglio 'PRIMA NOTA'
+    atleastOneDataFound = False
 
     convertStringToDatetime(dataSospesiExcel, DATA)
 
@@ -711,20 +800,21 @@ def readSospesiFromExcel(fileToWrite):
                             totSospesiNew.date = dataSospesiExcel.iat[i, DATA]
                             previousDate = dataSospesiExcel.iat[i, DATA]
                         else:
-                            totSospesiNew.date = datetime.datetime.strptime(dataSospesiExcel.iat[i, DATA], "%d/%m/%Y")
-                            previousDate = datetime.datetime.strptime(dataSospesiExcel.iat[i, DATA], "%d/%m/%Y")
+                            totSospesiNew.date = datetime.datetime.strptime(dataSospesiExcel.iat[i, DATA], dateFormat)
+                            previousDate = datetime.datetime.strptime(dataSospesiExcel.iat[i, DATA], dateFormat)
                             
-                    
+                    atleastOneDataFound = True
                     updateAgencyTotaleSospesi(totSospesiNew, dataSospesiExcel.iat[i, IMPORTO], dataSospesiExcel.iat[i, AGENZIA])
                 else:
                     # Non c'e' un importo e non c'e' la stringa "Eseguito", quindi e' una nuova tabella che sto analizzando, quindi salvo la riga in cui poi andare a scrivere la stringa "Eseguito" se e solo se la data della tabella che sto analizzando e' precedente o coincidente con la data attuale
-                    if(dataSospesiExcel.iat[i, DATA] <= todayDate):
+                    if(dataSospesiExcel.iat[i, DATA] <= todayDate and dataSospesiExcel.iat[i, DATA] <= lastDatetime):
                         indexRowExecuted.append(i+1)
 
         i += 1
 
     # Aggiungo l'ultimo record alla list dei NUOVI SOSPESI - bug: se non trova nulla va comunque a fare un append di dati vuoti per la data 01/01/2024 andando a scrivere tali dati nel foglio 'PRIMA NOTA'
-    listSospesiNew.append(totSospesiNew)
+    if(atleastOneDataFound == True):
+        listSospesiNew.append(totSospesiNew)
 
     strExecuted = list(["Eseguito"])
     df_sospesiExecuted = pd.DataFrame(strExecuted)
@@ -733,10 +823,13 @@ def readSospesiFromExcel(fileToWrite):
         writeSospesi_inPrimaNota(listSospesiNew[i], fileToWrite, listSospesiNew[i].date)
         time.sleep(2)
 
+    print("Numero di righe in cui scrivere la stringa 'Eseguito' = ", len(indexRowExecuted), ".\n")
+
     for i in range(0, len(indexRowExecuted)):
         with pd.ExcelWriter(fileToWrite, engine ="openpyxl", mode='a', if_sheet_exists='overlay') as writer:
             df_sospesiExecuted.to_excel(writer, index = False, header = False, sheet_name = sheetNameSospesi, startrow = indexRowExecuted[i], startcol = 10)    # 10 = 'J' -> NOTE
 
+        print("", end=f"\rNumero di righe mancanti in cui scrivere la stringa 'Eseguito': {len(indexRowExecuted) - i} %")
 
 
 

@@ -18,6 +18,3 @@ class TotaleSospesiNew_Date:
     totAgos = 0.0
     totTutelaLegale = 0.0
 
-class SubagentAgency:
-    subagent = []
-    agency = []

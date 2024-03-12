@@ -5,44 +5,64 @@ import pandas as pd
 import datetime
 import os
 import re
+import shutil
 
 from classDefinition import TotaleSospesiNuovi
 from companiesFunction import *
+from auxiliaryFunction import getAgencyFromSubagent
 
 try:
     totale_sospesi_vecchi = 0
     totale_sospesi_nuovi = TotaleSospesiNuovi()
 
     # Gestione versamenti effettuati
-    versamenti_SI_NO = input("\nSono stati eseguiti dei versamenti? [SI]/[NO]: ")
-    versamenti_SI_NO = versamenti_SI_NO.upper()
+    # versamenti_SI_NO = input("\nSono stati eseguiti dei versamenti? [SI]/[NO]: ")
+    # versamenti_SI_NO = versamenti_SI_NO.upper()
 
-    if(versamenti_SI_NO[0] == 'S'):
-        agenzia_versamenti = input("\nPer quale agenzia e' stato eseguito il versamento? Digitare il numero corrispondente all'agenzia e premere INVIO:\n1. RHO\n2. SOMMA LOMBARDO\n3. LEGNANO\n4. GALLARATE\n5. n\n\nAgenzia numero: ")
-        importo_versamenti = input("\nInserire l'importo del versamento: ")
+    # if(versamenti_SI_NO[0] == 'S'):
+    #     agenzia_versamenti = input("\nPer quale agenzia e' stato eseguito il versamento? Digitare il numero corrispondente all'agenzia e premere INVIO:\n1. RHO\n2. SOMMA LOMBARDO\n3. LEGNANO\n4. GALLARATE\n5. n\n\nAgenzia numero: ")
+    #     importo_versamenti = input("\nInserire l'importo del versamento: ")
 
-        # Sostituisco un eventuale ',' con un '.' per non avere poi un errore con la funzione float()
-        importo_versamenti = importo_versamenti.replace(',', '.')
-        importo_versamenti = float(importo_versamenti)
+    #     # Sostituisco un eventuale ',' con un '.' per non avere poi un errore con la funzione float()
+    #     importo_versamenti = importo_versamenti.replace(',', '.')
+    #     importo_versamenti = float(importo_versamenti)
 
     current_working_directory = os.getcwd()
 
     print("Percorso attuale: ", current_working_directory)
 
-    month_folder = input("\nInserire nome cartella del mese + anno (tutto in maiuscolo): ")
+    month_folder = input("\nInserire nome cartella del mese + anno: ")
     # path = r'C:\LUIGI 04052016\AMICONE LUIGI\DATI DAL 31032008 PC PORTATILE\DATI\CONTABILITA\PARTITE REGISTRATE PER CONTABILITA\GENERALI\PARTITE REGISTRATE\FEBBRAIO 2024'
+
+    month_folder = month_folder.upper()
+
+    datetimeSelectedMonthYear = convertMonthYearString_toDatetime(month_folder)
+    lastMonthYearDatetime = getLastDatetimeOfAMonth(datetimeSelectedMonthYear)
 
     partialDir_filesGENERALI    = r'\PARTITE REGISTRATE PER CONTABILITA\GENERALI\2024' + '\\' + month_folder
     partialDir_filesCATTOLICA   = r'\PARTITE REGISTRATE PER CONTABILITA\CATTOLICA\2024' + '\\' + month_folder
     partialDir_filesTUTELA      = r'\PARTITE REGISTRATE PER CONTABILITA\TUTELA LEGALE\2024' + '\\' + month_folder
 
     finalFileName = 'PRIMA_NOTA_TEST_.xlsx'
+    backupFileName = 'BACKUP_PRIMA_NOTA_TEST_.xlsx'
     finalPathName = current_working_directory + '\\' + finalFileName
+
+    # Se esiste gia' un file backupFileName, allora lo elimino
+    if(os.path.exists(current_working_directory + '\\' + backupFileName)):
+        os.remove(current_working_directory + '\\' + backupFileName)
+        print("File ", backupFileName, " rimosso.\n")
+    else:
+        print("File ", backupFileName, " non trovato.\n")
+
+    # Copia di backup del file PRIMA_NOTA_TEST_.xlsx
+    shutil.copyfile(finalPathName, current_working_directory + '\\' + backupFileName)
+    print("Creazione del file copia ", backupFileName, " avvenuta con successo.\n")
+
 
     # fileToManage = input("\nScegliere la compagnia di cui effettuare la copia dei dati.\n1. GENERALI\n2. CATTOLICA\n3. TUTELA\n\nPremere numero + INVIO: ")
     fileToManage = '1'
 
-    # readSospesiFromExcel(finalPathName)
+    getAgencyFromSubagent()
 
     while fileToManage.isnumeric():
         # GENERALI
@@ -61,7 +81,7 @@ try:
             for i in range(0, len(filesGENERALI_toParse)):
                 pathName_GENERALI = current_working_directory + partialDir_filesGENERALI + '\\' + filesGENERALI_toParse[i]
 
-                print("\nPercorso completo del file: ", pathName_GENERALI)
+                # print("\nPercorso completo del file: ", pathName_GENERALI)
 
                 readFromGenerali(filesGENERALI_toParse[i], pathName_GENERALI, finalPathName, totale_sospesi_nuovi)
 
@@ -71,7 +91,6 @@ try:
 
         # CATTOLICA
         elif fileToManage == '2':
-            print("\nTotale sospesi nuovi dopo GENERALI: ", totale_sospesi_nuovi)
 
             filesCATTOLICA_toParse = []
 
@@ -87,7 +106,7 @@ try:
             for i in range(0, len(filesCATTOLICA_toParse)):
                 pathName_CATTOLICA = current_working_directory + partialDir_filesCATTOLICA + '\\' + filesCATTOLICA_toParse[i]
 
-                print("\nPercorso completo del file: ", pathName_CATTOLICA)
+                # print("\nPercorso completo del file: ", pathName_CATTOLICA)
 
                 readFromCattolica(filesCATTOLICA_toParse[i], pathName_CATTOLICA, finalPathName, totale_sospesi_nuovi)
 
@@ -97,7 +116,6 @@ try:
 
         # TUTELA
         elif fileToManage == '3':
-            print("\nTotale sospesi nuovi dopo CATTOLICA: ", totale_sospesi_nuovi)
 
             filesTUTELA_toParse = []
 
@@ -114,7 +132,7 @@ try:
                 pathName_TUTELA = current_working_directory + partialDir_filesTUTELA + '\\' + filesTUTELA_toParse[i]
 
 
-                print("\nPercorso completo del file: ", pathName_TUTELA)
+                # print("\nPercorso completo del file: ", pathName_TUTELA)
 
                 readFromTutela(filesTUTELA_toParse[i], pathName_TUTELA, finalPathName, totale_sospesi_nuovi)
 
@@ -123,7 +141,7 @@ try:
             fileToManage = '4'
 
         elif fileToManage == '4':
-            readSospesiFromExcel(finalPathName)
+            readSospesiFromExcel(finalPathName, lastMonthYearDatetime)
 
             fileToManage = 'end'
             
@@ -132,4 +150,6 @@ except Exception as e:
     print("\n\nError: ", e)
     input()
 
-input("\nEsecuzione completata.\n")
+
+print("\nEsecuzione completata.\n")
+input()
