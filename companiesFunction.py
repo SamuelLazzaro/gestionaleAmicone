@@ -807,7 +807,7 @@ def readSospesiFromExcel(fileToWrite, lastDatetime):
                     updateAgencyTotaleSospesi(totSospesiNew, dataSospesiExcel.iat[i, IMPORTO], dataSospesiExcel.iat[i, AGENZIA])
                 else:
                     # Non c'e' un importo e non c'e' la stringa "Eseguito", quindi e' una nuova tabella che sto analizzando, quindi salvo la riga in cui poi andare a scrivere la stringa "Eseguito" se e solo se la data della tabella che sto analizzando e' precedente o coincidente con la data attuale
-                    if(dataSospesiExcel.iat[i, DATA] <= todayDate and dataSospesiExcel.iat[i, DATA] <= lastDatetime):
+                    if(dataSospesiExcel.iat[i, DATA] < todayDate and dataSospesiExcel.iat[i, DATA] <= lastDatetime):
                         indexRowExecuted.append(i+1)
 
         i += 1
