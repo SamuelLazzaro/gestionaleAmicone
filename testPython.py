@@ -24,14 +24,10 @@ try:
 
     # print("Timestamp: ", timestamp)
 
-    totale = float(200)
-    nuovo = float(100)
+    totale = '-200.50'
 
-    listTest = [["PROVA", totale]]
-
-    listTest.append(["ALTRA PROVA", nuovo])
-
-    print(listTest)
+    importo = float(totale)
+    print(importo)
 
 except Exception as e:
     print("Error: ", e)
