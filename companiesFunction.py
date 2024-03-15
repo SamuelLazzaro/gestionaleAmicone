@@ -126,7 +126,7 @@ def readFromGenerali(fileName_Generali, fileGenerali_read, fileToWrite, totale_s
                 totale_provvigioni += importo_provvigione
             elif(dataframe1.iat[i, MOD_PAGAMENTO] == 'MOBILE POS' or dataframe1.iat[i, MOD_PAGAMENTO] == 'VIRTUAL POS'):
                 totale_provvigioni += importo_provvigione
-            elif(dataframe1.iat[i, MOD_PAGAMENTO] == 'ANTICIPO AGENTE' or dataframe1.iat[i, MOD_PAGAMENTO].find('REGOLAZIONE SU CONTO COMPENSO') != -1):
+            elif(dataframe1.iat[i, MOD_PAGAMENTO] == 'ANTICIPO AGENTE' or dataframe1.iat[i, MOD_PAGAMENTO].find('REGOLAZIONE SU CONTO COMPENSO') != -1 or dataframe1.iat[i, MOD_PAGAMENTO] == 'COMPENSAZIONE'):
                 totale_incassi += importo_incasso
             elif(dataframe1.iat[i, MOD_PAGAMENTO] == 'FINANZIAMENTO AL CONSUMO'):
                 totale_provvigioni += importo_provvigione
@@ -263,6 +263,7 @@ def readFromCattolica(fileName_Cattolica, pathName_read, fileToWrite, totale_sos
     # read sheet 'Incassi' of CATTOLICA excel file
     dataframe1 = pd.read_excel(pathName_read, sheet_name='Incassi', usecols='A,E,H,I,K,Y,Z')
     # Non avendo inserito il parametro 'header' nella read_excel, la 1^a riga di dataframe1 contiene gia' i dati
+
     print("\nLettura file CATTOLICA eseguita correttamente.")
 
     # A -> 0 : CONTRAENTE
@@ -280,6 +281,15 @@ def readFromCattolica(fileName_Cattolica, pathName_read, fileToWrite, totale_sos
     MOD_PAGAMENTO   = int(4)
     DATA_FOGLIO_CASSA = int(5)
     COLLABORATORE   = int(6)
+
+
+    # Il file di CATTOLICA e' vuoto se len(dataframe1) = 1 e se le celle di NUM_POLIZZA e MOD_PAGAMENTO sono vuote: in tal caso rinomino il file ed esco dalla funzione
+    if(len(dataframe1) == 0 or (len(dataframe1) <= 1 and dataframe1.isnull().iat[0, CONTRAENTE] == True and dataframe1.isnull().iat[0, MOD_PAGAMENTO] == True and dataframe1.isnull().iat[0, NUM_POLIZZA] == True)):
+        print("File ", fileName_Cattolica, " vuoto.\n")
+        #  Rinomino comunque il file con la desinenza '_checked' in modo tale da non analizzarlo piu'
+        renameFileChecked(pathName_read)
+        print("File ", fileName_Cattolica, " rinominato con '_checked' come desinenza.\n")
+        return
 
     cattolica_contraente = []
     cattolica_nr_polizza = []
@@ -437,7 +447,6 @@ def readFromCattolica(fileName_Cattolica, pathName_read, fileToWrite, totale_sos
 
     print("File ", fileName_Cattolica, " rinominato con '_checked' come desinenza.\n")
 
-    # input("Premere INVIO per proseguire...\n")
 
 
 
@@ -822,17 +831,18 @@ def readSospesiFromExcel(fileToWrite, lastDatetime):
     strExecuted = list(["Eseguito"])
     df_sospesiExecuted = pd.DataFrame(strExecuted)
 
-    for i in range(0, len(listSospesiNew)):
-        writeSospesi_inPrimaNota(listSospesiNew[i], fileToWrite, listSospesiNew[i].date)
-        time.sleep(2)
+    # Scrittura dei TOTALI SOSPESI nel foglio 'PRIMA NOTA'
+    writeSospesi_inPrimaNota(listSospesiNew, fileToWrite)
 
-    print("Numero di righe in cui scrivere la stringa 'Eseguito' = ", len(indexRowExecuted), ".\n")
+    if(len(indexRowExecuted) > 0):
+        print("Numero di righe in cui scrivere la stringa 'Eseguito' = ", len(indexRowExecuted), ".\n")
 
-    
-    with pd.ExcelWriter(fileToWrite, engine ="openpyxl", mode='a', if_sheet_exists='overlay') as writer:
-        for i in range(0, len(indexRowExecuted)):
-            df_sospesiExecuted.to_excel(writer, index = False, header = False, sheet_name = sheetNameSospesi, startrow = indexRowExecuted[i], startcol = 10)    # 10 = 'J' -> NOTE
-            print("", end=f"\rNumero di righe mancanti in cui scrivere la stringa 'Eseguito': {len(indexRowExecuted) - i - 1}  ")
+        with pd.ExcelWriter(fileToWrite, engine ="openpyxl", mode='a', if_sheet_exists='overlay') as writer:
+            for i in range(0, len(indexRowExecuted)):
+                df_sospesiExecuted.to_excel(writer, index = False, header = False, sheet_name = sheetNameSospesi, startrow = indexRowExecuted[i], startcol = 10)    # 10 = 'J' -> NOTE
+                # print("", end=f"\rNumero di righe mancanti in cui scrivere la stringa 'Eseguito': {len(indexRowExecuted) - i - 1}  ")
 
-
+        print("Completata scrittura della stringa 'Eseguito' nel foglio 'SOSPESI' per tutte le righe.\n")
+    else:
+        print("Non vi e' nessuna riga nel foglio 'SOSPESI' in cui dover scrivere la stringa 'Eseguito'.\n")
 
