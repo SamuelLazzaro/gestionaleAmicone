@@ -6,40 +6,24 @@ import calendar
 sheetNamePrimaNota = "PRIMA NOTA"
 dateFormat = "%d/%m/%Y"
 
-# subagentAgency =   [["AMICONE LUIGI",             "GALLARATE"], 
-#                     ["AMICONE RENZO",             "GALLARATE"],
-#                     ["LOSCHI SANDRO",             "GALLARATE"],
-#                     ["CATTANEO SILVIO",           "GALLARATE"],
-#                     ["ORLANDI MARZIA",            "GALLARATE"],
-#                     ["AMICONE DEBORAH",           "GALLARATE"],
-#                     ["PISAN ENRICO",              "GALLARATE"],
-#                     ["MARCHESOLI FRANCESCO",      "RHO"],
-#                     ["MAZZOCCHI DORIANA",         "RHO"],
-#                     ["DI VITO VINCENZO",          "RHO"],
-#                     ["TENCONI GABRIELA",          "LEGNANO"],
-#                     ["TENCONI FRANCESCA",         "LEGNANO"],
-#                     ["TALLARINI IVANA",           "SOMMA LOMBARDO"],
-#                     ["TALLARINI VITTORIO",        "SOMMA LOMBARDO"],
-#                     ["DE SILVESTRI SERENELLA",    "SOMMA LOMBARDO"],
-#                     ["SPAGNUOLO STEFANIA",        "SOMMA LOMBARDO"]]
-
-
 subagentAgency = list()
 
+# Funzione per ottenere la list contenente SUBAGENTE e relativa AGENZIA partendo dai dati presenti nel file 'elenco_collaboratori_agenzia.xlsx'
 def getAgencyFromSubagent():
     current_directory = os.getcwd()
     subagentAgency_filename = current_directory + '\\' + 'elenco_collaboratori_agenzia.xlsx'
 
     df_agency = pd.read_excel(subagentAgency_filename, usecols='C,D')
 
-    # A -> 0 : COLLABORATORE
-    # B -> 1 : AGENZIA
+    # C -> 0 : COLLABORATORE
+    # D -> 1 : AGENZIA
     global subagentAgency
 
+    # Conversione del dataframe df_agency in una list
     subagentAgency = df_agency.values.tolist()
 
 
-
+# Funzione per trovare l'AGENZIA a cui fa riferimento un SUBAGENTE dato in input
 def findAgencyFromSubagent(subagentName):
     NOME = int(0)
     AGENZIA = int(1)
@@ -106,9 +90,9 @@ def writeSospesi_inPrimaNota(listSospesiNew, filePathnameToWrite):
             # L -> 3 : TOTALE SOSPESI VECCHI
             # N -> 4 : TOTALE SOSPESI NUOVI
 
-            DATA = int(0)
-            CASSA_ENTRATE = int(1)
-            CASSA_USCITE = int(2)
+            DATA            = int(0)
+            CASSA_ENTRATE   = int(1)
+            CASSA_USCITE    = int(2)
             TOT_SOSPESI_OLD = int(3)
             TOT_SOSPESI_NEW = int(4)
 
@@ -132,6 +116,8 @@ def writeSospesi_inPrimaNota(listSospesiNew, filePathnameToWrite):
 
                             # ATTENZIONE: dateFromPrimaNota e dateFromSospesi devono essere entrambe del tipo datetime.datetime, altrimenti il confronto fallisce
                             # Potrei aggiungere un if con else in errore se type(dateFromPrimaNota) != type(dateFromSospesi)
+                            # ATTENZIONE: i NUOVI SOSPESI del foglio 'SOSPESI' alla data 14/03/2024 devono essere scritti nella tabella del 15/03/2024 del foglio 'PRIMA NOTA', ossia sempre alla data successiva.
+                            # Mentre nel foglio 'SOSPESI' devono essere scritti sempre alla data relativa al giorno del file da cui sono stati presi quei dati.
                             if(dateFromPrimaNota == dateFromSospesi + datetime.timedelta(1)):
                                 rowData = i+2   # i -> 'DATA'       i+1 -> es. '01/01/2024'     Devo quindi aggiungere un altro + 1 -> i+2
                                 break
@@ -191,7 +177,7 @@ def convertDatetimeValueToString(datetimeToConvert):
         except ValueError:
             print("\nErrore in convertDatetimeToString.\n")
 
-            
+
 def convertToFloat(importo):
     if(isinstance(importo, str)):
         if(importo == '-'):

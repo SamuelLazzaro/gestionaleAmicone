@@ -36,12 +36,6 @@ def highlight_if_FinConsumo(val):
 def readFromGenerali(fileName_Generali, fileGenerali_read, fileToWrite, totale_sospesi_nuovi):
     sheetNameGenerali = 'BONIFICI GENERALI '    # ATTENZIONE allo spazio finale nel sheet name
 
-    # year_month_day = re.findall('\\d{4}-\\d{2}-\\d{2}', fileGenerali_read)[0]
-
-    # year = year_month_day[0:4]
-    # month = year_month_day[5:7]
-    # day = year_month_day[8:10]
-
     findImporto = False
     # read by default 1st sheet of an excel file
     # ATTENZIONE: per come e' fatto attualmente il file di GENERALI vi sono molte righe prima della tabella con i dati, quindi posso non considerare il parametro 'header' nella read_excel.
@@ -99,18 +93,17 @@ def readFromGenerali(fileName_Generali, fileGenerali_read, fileToWrite, totale_s
         if(findImporto and dataframe1.isnull().iat[i, NUM_POLIZZA] == False and dataframe1.isnull().iat[i, ANAGRAFICA] == False and dataframe1.isnull().iat[i, IMPORTO] == False):
             # NON devo salvare le righe di dati vuoti che si trovano all'interno della tabella con i dati da salvare
             # N.B. In questo caso non sto salvando nemmeno la riga con il Totale, tanto me lo ricreo dopo
-            # Salvo solamente le righe che hanno 'BONIFICO' nella colonna H del file di partenza
-            # Togliere importi negativi
 
-            # In realta', essendo una stringa, mi basterebbe vedere se il primo carattere e' un '-' (importo negativo) oppure no
-            # if(floatValue > 0):
             condition = False
 
+            # condition = true se l'importo e' negativo -> questa variabile boolean serve per i dati da salvare nei fogli 'BONIFICI' e 'SOSPESI'
+            # in quanto tali importo devono essere sempre positivi.
             if(isinstance(dataframe1.iat[i, IMPORTO], str)):
                 condition = (dataframe1.iat[i, IMPORTO][0] != '-')            
             else:
                 condition = (dataframe1.iat[i, IMPORTO] > 0) or (dataframe1.iat[i, IMPORTO] > 0.0)
 
+            # L'importo della provvigione e dell'incasso puo' essere negativo
             # Modifico l'importo della singola provvigione in un float
             importo_provvigione = convertToFloat(dataframe1.iat[i, PROVVIGIONI])
             importo_incasso = convertToFloat(dataframe1.iat[i, IMPORTO])
@@ -206,12 +199,9 @@ def readFromGenerali(fileName_Generali, fileGenerali_read, fileToWrite, totale_s
     # In questo caso e' una datetime.datetime
     newDateToCompare = dateToCompare
 
-    # Ricerca della riga nel foglio 'BONIFICI GENERALI ' in cui andare a salvare i dati corrispondenti alla data newDateToCompare
-    for i in range(0, len(datareadBonifici)):
-        if(datareadBonifici.values[i] == newDateToCompare):
-            # print(dataread.values[i])
-            BonificiRowData = i+1
-            break
+    # Ricerca dell'indice di riga nel foglio 'BONIFICI GENERALI ' in cui andare a salvare i dati corrispondenti alla data newDateToCompare
+    listDateBonificiGenerali = datareadBonifici.values.tolist()
+    BonificiRowData = listDateBonificiGenerali.index([newDateToCompare]) + 1
 
     dateFound = False
 
@@ -253,12 +243,6 @@ def readFromGenerali(fileName_Generali, fileGenerali_read, fileToWrite, totale_s
 def readFromCattolica(fileName_Cattolica, pathName_read, fileToWrite, totale_sospesi_nuovi):
 
     sheetNameCattolica = 'BONIFICI CATTOLICA'
-
-    # day_month_year = re.findall('\\d{2}_\\d{2}_\\d{4}', pathName_read)[0]
-
-    # day = day_month_year[0:2]
-    # month = day_month_year[3:5]
-    # year = day_month_year[6:10]
     
     # read sheet 'Incassi' of CATTOLICA excel file
     dataframe1 = pd.read_excel(pathName_read, sheet_name='Incassi', usecols='A,E,H,I,K,Y,Z')
@@ -274,13 +258,13 @@ def readFromCattolica(fileName_Cattolica, pathName_read, fileToWrite, totale_sos
     # Y -> 5 : DATA FOGLIO CASSA
     # Z -> 6 : COLLABORATORE
 
-    CONTRAENTE      = int(0)
-    NUM_POLIZZA     = int(1)
-    IMPORTO         = int(2)
-    PROVVIGIONI     = int(3)
-    MOD_PAGAMENTO   = int(4)
-    DATA_FOGLIO_CASSA = int(5)
-    COLLABORATORE   = int(6)
+    CONTRAENTE          = int(0)
+    NUM_POLIZZA         = int(1)
+    IMPORTO             = int(2)
+    PROVVIGIONI         = int(3)
+    MOD_PAGAMENTO       = int(4)
+    DATA_FOGLIO_CASSA   = int(5)
+    COLLABORATORE       = int(6)
 
 
     # Il file di CATTOLICA e' vuoto se len(dataframe1) = 1 e se le celle di NUM_POLIZZA e MOD_PAGAMENTO sono vuote: in tal caso rinomino il file ed esco dalla funzione
@@ -317,17 +301,9 @@ def readFromCattolica(fileName_Cattolica, pathName_read, fileToWrite, totale_sos
     for i in range(0, len(dataframe1)):
         if(dataframe1.isnull().iat[i, CONTRAENTE] == False and dataframe1.isnull().iat[i, NUM_POLIZZA] == False and dataframe1.isnull().iat[i, IMPORTO] == False):
             # NON devo salvare le righe di dati vuoti che si trovano all'interno della tabella con i dati da salvare
-            # N.B. In questo caso non sto salvando nemmeno la riga con il Totale, tanto me lo ricreo dopo
-            # Salvo solamente le righe che hanno la sottostringa 'Bonifico' nella colonna K del file di partenza
-            # Togliere importi negativi
             # Cerco l'indice corrispondente alla ',' nella stringa con l'importo
-            # commaIndex = dataframe1.iat[i, 3].find(',')
-            # print(dataframe1.iat[i, 3][0:commaIndex], " type: ", type(dataframe1.iat[i, 3][0:commaIndex]))
             # Trasformo solo le cifre intere della stringa con l'importo in un float per poi verificare se tale valore e' > 0, dato che non mi interessa avere anche le cifre decimali per fare tale confronto
-            # floatValue = float(dataframe1.iat[i, 3][0:commaIndex])
 
-            # In realta', essendo una stringa, mi basterebbe vedere se il primo carattere e' un '-' (importo negativo) oppure no
-            # if(floatValue > 0):
             condition = False
 
             if(isinstance(dataframe1.iat[i, IMPORTO], str)):
@@ -411,12 +387,9 @@ def readFromCattolica(fileName_Cattolica, pathName_read, fileToWrite, totale_sos
     # In questo caso e' una datetime.datetime
     newDateToCompare = dateToCompare
 
-    # Ricerca numero riga in cui andare a salvare i nuovi record in BONIFICI CATTOLICA
-    for i in range(0, len(datareadBonifici)):
-        if(datareadBonifici.values[i] == newDateToCompare):
-            # print(dataread.values[i])
-            BonificiRowData = i+1
-            break
+    # Ricerca dell'indice di riga in cui andare a salvare i nuovi record in BONIFICI CATTOLICA
+    listDateBonificiCattolica = datareadBonifici.values.tolist()
+    BonificiRowData = listDateBonificiCattolica.index([newDateToCompare]) + 1
 
     # Ricerca numero riga su cui andare a salvare i nuovi record in SOSPESI senza sovrascrivere quelli precedenti relativi alla stessa data
     dateFound = False
