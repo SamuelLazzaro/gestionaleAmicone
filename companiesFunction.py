@@ -92,21 +92,12 @@ def readFromGenerali(fileName_Generali, fileGenerali_read, fileToWrite, totale_s
 
         if(findImporto and dataframe1.isnull().iat[i, NUM_POLIZZA] == False and dataframe1.isnull().iat[i, ANAGRAFICA] == False and dataframe1.isnull().iat[i, IMPORTO] == False):
             # NON devo salvare le righe di dati vuoti che si trovano all'interno della tabella con i dati da salvare
-            # N.B. In questo caso non sto salvando nemmeno la riga con il Totale, tanto me lo ricreo dopo
-
-            condition = False
-
-            # condition = true se l'importo e' negativo -> questa variabile boolean serve per i dati da salvare nei fogli 'BONIFICI' e 'SOSPESI'
-            # in quanto tali importo devono essere sempre positivi.
-            if(isinstance(dataframe1.iat[i, IMPORTO], str)):
-                condition = (dataframe1.iat[i, IMPORTO][0] != '-')            
-            else:
-                condition = (dataframe1.iat[i, IMPORTO] > 0) or (dataframe1.iat[i, IMPORTO] > 0.0)
 
             # L'importo della provvigione e dell'incasso puo' essere negativo
             # Modifico l'importo della singola provvigione in un float
             importo_provvigione = convertToFloat(dataframe1.iat[i, PROVVIGIONI])
             importo_incasso = convertToFloat(dataframe1.iat[i, IMPORTO])
+            importo_versamento = convertToFloat(dataframe1.iat[i, IMPORTO])
                                                                                                                         
             # Calcolo dei totali degli INCASSI e delle PROVVIGIONI di GENERALI
             # BONIFICO, CONTANTI, ASSEGNO BANCARIO/POSTALE: si INCASSI, si PROVVIGIONI
@@ -126,10 +117,7 @@ def readFromGenerali(fileName_Generali, fileGenerali_read, fileToWrite, totale_s
             else:
                 raise Exception("\nTrovato un metodo di pagamento non convenzionale nel file di GENERALI.\n")
 
-            if(condition):
-                # Modifico l'importo del singolo versamento in un float
-                importo_versamento = convertToFloat(dataframe1.iat[i, IMPORTO])
-
+            if(importo_versamento > 0.0):
                 if (dataframe1.iat[i, MOD_PAGAMENTO] == 'BONIFICO'):
                     # BONIFICO con FINANZIAMENTO A CONSUMO GENERALI -> da inserire nei SOSPESI
                     if(dataframe1.iat[i, NUM_POLIZZA].find('Fin. Consumo') != -1):
@@ -146,28 +134,32 @@ def readFromGenerali(fileName_Generali, fileGenerali_read, fileToWrite, totale_s
                         sospesi_generali_pagato.append('No')
                         
                         updateAgencyTotaleSospesi(totale_sospesi_nuovi, importo_versamento, agenzia)
-                        continue        # Vado all'iterazione successiva del while loop
+                        continue        # Vado all'iterazione successiva del while loop -> NON TOGLIERE
+                    else:
+                        # BONIFICO GENERALI
+                        generali_nr_polizza.append(dataframe1.iat[i, NUM_POLIZZA])
+                        generali_anagrafica.append(dataframe1.iat[i, ANAGRAFICA])
+                        generali_importo.append(importo_versamento)
+                        continue        # Vado all'iterazione successiva del while loop -> NON TOGLIERE
 
-                    # BONIFICO GENERALI
-                    generali_nr_polizza.append(dataframe1.iat[i, NUM_POLIZZA])
-                    generali_anagrafica.append(dataframe1.iat[i, ANAGRAFICA])
-                    generali_importo.append(importo_versamento)
-
-                # CONTANTI o ASSEGNO BANCARIO/POSTALE GENERALI
-                elif (dataframe1.iat[i, MOD_PAGAMENTO] == 'CONTANTI' or dataframe1.iat[i, MOD_PAGAMENTO].find('ASSEGNO') != -1):
-                        dateString = dateToCompare.strftime(dateFormat)
-                        sospesi_generali_data.append(dateString)
-                        sospesi_generali_nr_polizza.append(dataframe1.iat[i, NUM_POLIZZA])
-                        sospesi_generali_anagrafica.append(dataframe1.iat[i, ANAGRAFICA])
-                        sospesi_generali_metodo_pagamento.append(dataframe1.iat[i, MOD_PAGAMENTO])
-                        sospesi_generali_importo.append(importo_versamento)
-                        agenzia = findAgencyFromSubagent(dataframe1.iat[i, COLLABORATORE])
-                        sospesi_generali_agenzia.append(agenzia)
-                        sospesi_generali_compagnia.append('GENERALI')
-                        sospesi_generali_collaboratore.append(dataframe1.iat[i, COLLABORATORE])
-                        sospesi_generali_pagato.append('No')
-                        
-                        updateAgencyTotaleSospesi(totale_sospesi_nuovi, importo_versamento, agenzia)
+            # Gestione SOSPESI:
+            # - BONIFICI (non Finanziamento al consumo): vengono inseriti nei SOSPESI nel caso in cui abbiano degli importi negativi
+            # - CONTANTI o ASSEGNO BANCARIO/POSTALE GENERALI: vengono inseriti nei SOSPESI sia se hanno degli importi positivi sia se hanno degli importi negativi
+            # ATTENZIONE:
+            if (dataframe1.iat[i, MOD_PAGAMENTO] == 'CONTANTI' or dataframe1.iat[i, MOD_PAGAMENTO].find('ASSEGNO') != -1 or (dataframe1.iat[i, MOD_PAGAMENTO] == 'BONIFICO' and dataframe1.iat[i, NUM_POLIZZA].find('Fin. Consumo') == -1 and importo_versamento < 0.0)):
+                dateString = dateToCompare.strftime(dateFormat)
+                sospesi_generali_data.append(dateString)
+                sospesi_generali_nr_polizza.append(dataframe1.iat[i, NUM_POLIZZA])
+                sospesi_generali_anagrafica.append(dataframe1.iat[i, ANAGRAFICA])
+                sospesi_generali_metodo_pagamento.append(dataframe1.iat[i, MOD_PAGAMENTO])
+                sospesi_generali_importo.append(importo_versamento)
+                agenzia = findAgencyFromSubagent(dataframe1.iat[i, COLLABORATORE])
+                sospesi_generali_agenzia.append(agenzia)
+                sospesi_generali_compagnia.append('GENERALI')
+                sospesi_generali_collaboratore.append(dataframe1.iat[i, COLLABORATORE])
+                sospesi_generali_pagato.append('No')
+                
+                updateAgencyTotaleSospesi(totale_sospesi_nuovi, importo_versamento, agenzia)
                 
 
         if(dataframe1.isnull().iat[i, NUM_POLIZZA] == False and dataframe1.iat[i, ANAGRAFICA] == 'ANAGRAFICA' and findImporto == False):
@@ -301,20 +293,11 @@ def readFromCattolica(fileName_Cattolica, pathName_read, fileToWrite, totale_sos
     for i in range(0, len(dataframe1)):
         if(dataframe1.isnull().iat[i, CONTRAENTE] == False and dataframe1.isnull().iat[i, NUM_POLIZZA] == False and dataframe1.isnull().iat[i, IMPORTO] == False):
             # NON devo salvare le righe di dati vuoti che si trovano all'interno della tabella con i dati da salvare
-            # Cerco l'indice corrispondente alla ',' nella stringa con l'importo
-            # Trasformo solo le cifre intere della stringa con l'importo in un float per poi verificare se tale valore e' > 0, dato che non mi interessa avere anche le cifre decimali per fare tale confronto
-
-            condition = False
-
-            if(isinstance(dataframe1.iat[i, IMPORTO], str)):
-                condition = (dataframe1.iat[i, IMPORTO][0] != '-')
-            else:
-                condition = (dataframe1.iat[i, IMPORTO] > 0) or (dataframe1.iat[i, IMPORTO] > 0.0)
-
 
             # Modifico l'importo della singola provvigione in un float
             importo_incasso = convertToFloat(dataframe1.iat[i, IMPORTO])
             importo_provvigione = convertToFloat(dataframe1.iat[i, PROVVIGIONI])
+            importo_versamento = convertToFloat(dataframe1.iat[i, IMPORTO])
 
             # Calcolo dei totali degli INCASSI e delle PROVVIGIONI di GENERALI
             # Assegno, Contante, Bonifico su CC di Agenzia, Bonifico su CC di Direzione (Finanziamento al consumo), Automatico (incasso = 0.0): si INCASSI, si PROVVIGIONI
@@ -327,36 +310,37 @@ def readFromCattolica(fileName_Cattolica, pathName_read, fileToWrite, totale_sos
             else:
                 raise Exception("\nTrovato un metodo di pagamento non convenzionale nel file di CATTOLICA.\n")
 
-            if(condition):
-                # Modifico l'importo del singolo versamento in un float
-                importo_versamento = convertToFloat(dataframe1.iat[i, IMPORTO])
+            # Gestione BONIFICI CATTOLICA (NON Finanziamento al Consumo) con importo > 0.0 -> foglio 'BONIFICI CATTOLICA)
+            if(dataframe1.iat[i, MOD_PAGAMENTO] == 'Bonifico su CC di Agenzia' and importo_versamento > 0.0):
+                # Importo BONIFICO positivo -> foglio 'BONIFICI CATTOLICA'
+                cattolica_contraente.append(dataframe1.iat[i, 0])
+                cattolica_nr_polizza.append(dataframe1.iat[i, NUM_POLIZZA])
+                cattolica_importo.append(importo_versamento)
 
-                # BONIFICI CATTOLICA
-                if(dataframe1.iat[i, MOD_PAGAMENTO] == 'Bonifico su CC di Agenzia'):
-                    cattolica_contraente.append(dataframe1.iat[i, 0])
-                    cattolica_nr_polizza.append(dataframe1.iat[i, NUM_POLIZZA])
-                    cattolica_importo.append(importo_versamento)
+            # Foglio 'SOSPESI' deve contenere:
+            # - BONIFICI CATTOLICA (NON Finanziamento al Consumo) con importo < 0.0
+            # - BONIFICI FINANZIAMENTO AL CONSUMO con importo > 0.0
+            # - ASSEGNI e CONTANTI con importo sia positivo sia negativo
+            elif((dataframe1.iat[i, MOD_PAGAMENTO] == 'Bonifico su CC di Agenzia' and importo_versamento < 0.0) or (dataframe1.iat[i, MOD_PAGAMENTO] == 'Bonifico su CC di Direzione' and importo_versamento > 0.0) or dataframe1.iat[i, MOD_PAGAMENTO].find('Assegno') != -1 or dataframe1.iat[i, MOD_PAGAMENTO] == 'Contante'):
+                dateString = dateToCompare.strftime(dateFormat)
+                sospesi_cattolica_data.append(dateString)
+                sospesi_cattolica_nr_polizza.append(dataframe1.iat[i, NUM_POLIZZA])
+                sospesi_cattolica_anagrafica.append(dataframe1.iat[i, CONTRAENTE])
+                sospesi_cattolica_metodo_pagamento.append(dataframe1.iat[i, MOD_PAGAMENTO])
+                sospesi_cattolica_importo.append(importo_versamento)
 
-                # SOSPESI CATTOLICA: ASSEGNO BANCARIO, CONTANTI, FINANZIAMENTO AL CONSUMO
-                elif(dataframe1.iat[i, MOD_PAGAMENTO].find('Assegno') != -1 or dataframe1.iat[i, MOD_PAGAMENTO] == 'Contante' or dataframe1.iat[i, MOD_PAGAMENTO] == 'Bonifico su CC di Direzione'):
-                    dateString = dateToCompare.strftime(dateFormat)
-                    sospesi_cattolica_data.append(dateString)
-                    sospesi_cattolica_nr_polizza.append(dataframe1.iat[i, NUM_POLIZZA])
-                    sospesi_cattolica_anagrafica.append(dataframe1.iat[i, CONTRAENTE])
-                    sospesi_cattolica_metodo_pagamento.append(dataframe1.iat[i, MOD_PAGAMENTO])
-                    sospesi_cattolica_importo.append(importo_versamento)
-                    if(dataframe1.iat[i, MOD_PAGAMENTO] == 'Bonifico su CC di Direzione'):
-                        agenzia = "AGOS"
-                        sospesi_cattolica_agenzia.append(agenzia)
-                        updateAgencyTotaleSospesi(totale_sospesi_nuovi, importo_versamento, agenzia)
-                    else:
-                        agenzia = findAgencyFromSubagent(dataframe1.iat[i, COLLABORATORE])
-                        sospesi_cattolica_agenzia.append(agenzia)
-                        updateAgencyTotaleSospesi(totale_sospesi_nuovi, importo_versamento, agenzia)
+                if(dataframe1.iat[i, MOD_PAGAMENTO] == 'Bonifico su CC di Direzione'):
+                    agenzia = "AGOS"
+                    sospesi_cattolica_agenzia.append(agenzia)
+                    updateAgencyTotaleSospesi(totale_sospesi_nuovi, importo_versamento, agenzia)
+                else:
+                    agenzia = findAgencyFromSubagent(dataframe1.iat[i, COLLABORATORE])
+                    sospesi_cattolica_agenzia.append(agenzia)
+                    updateAgencyTotaleSospesi(totale_sospesi_nuovi, importo_versamento, agenzia)
 
-                    sospesi_cattolica_compagnia.append('CATTOLICA')
-                    sospesi_cattolica_collaboratore.append(dataframe1.iat[i, COLLABORATORE])
-                    sospesi_cattolica_pagato.append('No')                      
+                sospesi_cattolica_compagnia.append('CATTOLICA')
+                sospesi_cattolica_collaboratore.append(dataframe1.iat[i, COLLABORATORE])
+                sospesi_cattolica_pagato.append('No')                      
 
 
     # Creazione dataframe BONIFICI
@@ -489,21 +473,11 @@ def readFromTutela(fileName_Tutela, fileTutela_read, fileToWrite, totale_sospesi
 
         if(findImporto and dataframe1.isnull().iat[i, IMPORTO] == False):
             # NON devo salvare le righe di dati vuoti che si trovano all'interno della tabella con i dati da salvare
-            # N.B. In questo caso non sto salvando nemmeno la riga con il Totale, tanto me lo ricreo dopo
-            # Salvo solamente le righe che hanno 'BB' nella colonna H del file di partenza
-            # Togliere importi negativi
-
-            # Se l'importo e' una stringa allora controllo che il primo carattere sia diverso da '-', mentre se e' un int o un float deve essere rispettivamente > 0 oppure > 0.0
-            condition = False
-
-            if(isinstance(dataframe1.iat[i, IMPORTO], str)):
-                condition = (dataframe1.iat[i, IMPORTO][0] != '-')
-            else:
-                condition = (dataframe1.iat[i, IMPORTO] > 0) or (dataframe1.iat[i, IMPORTO] > 0.0)
 
             # Modifico l'importo della singola provvigione in un float
             importo_incasso = convertToFloat(dataframe1.iat[i, IMPORTO])
             importo_provvigione = convertToFloat(dataframe1.iat[i, PROVVIGIONI])
+            importo_versamento = convertToFloat(dataframe1.iat[i, IMPORTO])
 
             if(dataframe1.iat[i, MOD_PAGAMENTO] != 'CC' and dataframe1.iat[i, MOD_PAGAMENTO] != 'BB' and dataframe1.iat[i, MOD_PAGAMENTO] != 'AB'):
                 raise Exception("\nTrovato metodo di pagamento non convenzionale in TUTELA LEGALE.\n")
@@ -521,32 +495,31 @@ def readFromTutela(fileName_Tutela, fileTutela_read, fileToWrite, totale_sospesi
                     totale_IncassiProvvigioni[numberOfDifferentDates][TOT_INCASSI] += importo_incasso
                     totale_IncassiProvvigioni[numberOfDifferentDates][TOT_PROVVIGIONI] += importo_provvigione
 
-            if(condition):
-                # Modifico l'importo del singolo versamento in un float
-                importo_versamento = convertToFloat(dataframe1.iat[i, IMPORTO])
-
-                # BONIFICI TUTELA LEGALE
-                if(dataframe1.iat[i, MOD_PAGAMENTO] == 'BB'):
-                    tutela_nr_polizza.append(dataframe1.iat[i, NUM_POLIZZA])
-                    tutela_anagrafica.append(dataframe1.iat[i, ANAGRAFICA])
-                    tutela_importo.append(importo_versamento)
-                    tutela_data.append(dataframe1.iat[i, DATA])
-
-                # SOSPESI TUTELA LEGALE: CONTANTI e ASSEGNO BANCARIO (al momento non c'e' il FINANZIAMENTO AL CONSUMO per TUTELA LEGALE)
-                elif(dataframe1.iat[i, MOD_PAGAMENTO] == 'CC' or dataframe1.iat[i, MOD_PAGAMENTO] == 'AB'):
-                    # Al momento il Finanziamento a Consumo (AGOS) non e' possibile con TUTELA LEGALE
-                    dateAs_datetimeType = dataframe1.iat[i, DATA]
-                    sospesi_tutela_data.append(dateAs_datetimeType)
-                    sospesi_tutela_nr_polizza.append(dataframe1.iat[i, NUM_POLIZZA])
-                    sospesi_tutela_anagrafica.append(dataframe1.iat[i, ANAGRAFICA])
-                    sospesi_tutela_metodo_pagamento.append(dataframe1.iat[i, MOD_PAGAMENTO])
-                    sospesi_tutela_importo.append(importo_versamento)
-                    sospesi_tutela_agenzia.append('TUTELA LEGALE')     # sospesi_tutela_agenzia.append(dataframe1.iat[i, COLLABORATORE])
-                    sospesi_tutela_compagnia.append('TUTELA')
-                    sospesi_tutela_collaboratore.append('')
-                    sospesi_tutela_pagato.append('No')
-                    
-                    updateAgencyTotaleSospesi(totale_sospesi_nuovi, importo_versamento, "TUTELA LEGALE")
+            # ATTENZIONE: al momento per TUTELA LEGALE non e' previsto il FINANZIAMENTO AL CONSUMO
+            
+            # BONIFICI TUTELA LEGALE con importo > 0.0 -> foglio 'BONIFICI TUTELA LEGALE'
+            if(dataframe1.iat[i, MOD_PAGAMENTO] == 'BB' and importo_versamento > 0.0):
+                tutela_nr_polizza.append(dataframe1.iat[i, NUM_POLIZZA])
+                tutela_anagrafica.append(dataframe1.iat[i, ANAGRAFICA])
+                tutela_importo.append(importo_versamento)
+                tutela_data.append(dataframe1.iat[i, DATA])
+                      
+            # BONIFICO con importo < 0.0, oppure CONTANTI, oppure ASSEGNO BANCARIO -> foglio 'SOSPESI'
+            # N.B. Nel caso di CONTANTI o ASSEGNO BANCARIO vengono aggiunti nel foglio 'SOSPESI' a prescindere dal fatto che l'importo sia > o < 0.0
+            elif((dataframe1.iat[i, MOD_PAGAMENTO] == 'BB' and importo_versamento < 0.0) or dataframe1.iat[i, MOD_PAGAMENTO] == 'CC' or dataframe1.iat[i, MOD_PAGAMENTO] == 'AB'):
+                # Al momento il Finanziamento a Consumo (AGOS) non e' possibile con TUTELA LEGALE
+                dateAs_datetimeType = dataframe1.iat[i, DATA]
+                sospesi_tutela_data.append(dateAs_datetimeType)
+                sospesi_tutela_nr_polizza.append(dataframe1.iat[i, NUM_POLIZZA])
+                sospesi_tutela_anagrafica.append(dataframe1.iat[i, ANAGRAFICA])
+                sospesi_tutela_metodo_pagamento.append(dataframe1.iat[i, MOD_PAGAMENTO])
+                sospesi_tutela_importo.append(importo_versamento)
+                sospesi_tutela_agenzia.append('TUTELA LEGALE')     # sospesi_tutela_agenzia.append(dataframe1.iat[i, COLLABORATORE])
+                sospesi_tutela_compagnia.append('TUTELA')
+                sospesi_tutela_collaboratore.append('')
+                sospesi_tutela_pagato.append('No')
+                
+                updateAgencyTotaleSospesi(totale_sospesi_nuovi, importo_versamento, "TUTELA LEGALE")
 
         if(dataframe1.isnull().iat[i, NUM_POLIZZA] == False and findImporto == False):
             # Se trovo la stringa 'ANAGRAFICA' vuol dire che dal ciclo successivo inizio a salvare tutti i dati
