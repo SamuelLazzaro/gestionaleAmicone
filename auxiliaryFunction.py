@@ -180,8 +180,6 @@ def convertDatetimeValueToString(datetimeToConvert):
 
 def convertToFloat(importo):
     if(isinstance(importo, str)):
-        if(importo == '-'):
-            return 0.0
         importo = importo.replace('.', '')
         importo_float = importo.replace(',', '.')
         importo_float = float(importo_float)
