@@ -180,6 +180,9 @@ def convertDatetimeValueToString(datetimeToConvert):
 
 def convertToFloat(importo):
     if(isinstance(importo, str)):
+        if(len(importo) == 1 and importo == '-'):
+            # In un file GENERALI (05/02/2024) vi era un importo nelle provvigioni in cui vi era solamente il segno '-' senza nessun valore: in questo caso ritorno 0.0 in modo tale da non considerarlo
+            return 0.0
         importo = importo.replace('.', '')
         importo_float = importo.replace(',', '.')
         importo_float = float(importo_float)
