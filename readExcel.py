@@ -34,8 +34,10 @@ try:
     month_folder = input("\nInserire nome cartella del mese + anno: ")
     # path = r'C:\LUIGI 04052016\AMICONE LUIGI\DATI DAL 31032008 PC PORTATILE\DATI\CONTABILITA\PARTITE REGISTRATE PER CONTABILITA\GENERALI\PARTITE REGISTRATE\FEBBRAIO 2024'
 
+    # Conversione in UPPER CASE del mese in input inserito in quanto la cartella in cui si trovano tutti i file ha nome (es.) "FEBBRAIO 2024"
     month_folder = month_folder.upper()
 
+    # Calcolo della data dell'ultimo giorno del mese inserito come input in modo tale da non andare oltre tale data nell'inserimento della stringa 'Eseguito' nel foglio 'SOSPESI'
     datetimeSelectedMonthYear = convertMonthYearString_toDatetime(month_folder)
     lastMonthYearDatetime = getLastDatetimeOfAMonth(datetimeSelectedMonthYear)
 
@@ -58,10 +60,9 @@ try:
     shutil.copyfile(finalPathName, current_working_directory + '\\' + backupFileName)
     print("Creazione del file copia ", backupFileName, " avvenuta con successo.\n")
 
-
-    # fileToManage = input("\nScegliere la compagnia di cui effettuare la copia dei dati.\n1. GENERALI\n2. CATTOLICA\n3. TUTELA\n\nPremere numero + INVIO: ")
     fileToManage = '1'
 
+    # Caricamento della list in cui inserire il nome di ogni SUBAGENTE e la corrispettiva AGENZIA di riferimento a partire dai dati presenti nel file Excel 'elenco_collaboratori_agenzia.xlsx'
     getAgencyFromSubagent()
 
     while fileToManage.isnumeric():
@@ -141,7 +142,8 @@ try:
             fileToManage = '4'
 
         elif fileToManage == '4':
-            readSospesiFromExcel(finalPathName, lastMonthYearDatetime)
+
+            manageSospesi(finalPathName, lastMonthYearDatetime)
 
             fileToManage = 'end'
             

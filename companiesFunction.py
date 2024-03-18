@@ -210,7 +210,7 @@ def readFromGenerali(fileName_Generali, fileGenerali_read, fileToWrite, totale_s
     # Ricerca della riga nel foglio 'PRIMA NOTA' in cui andare a salvare i dati corrispondenti alla data newDateToCompare
     PrimaNotaRowData = findPrimaNotaRow_forIncassiProvvigioni(datareadPrimaNota, newDateToCompare)
 
-    print("Copia e salvataggio dati in esecuzione, attendere ...\n")
+    print("Copia e salvataggio dei dati del file ", fileName_Generali, " di GENERALI in esecuzione, attendere ...\n")
 
     with pd.ExcelWriter(fileToWrite, engine ="openpyxl", mode='a', if_sheet_exists='overlay') as writer:
         df_BonificiGenerali.to_excel(writer, index = False, header = False, sheet_name = sheetNameGenerali, startrow = BonificiRowData+1, startcol = 1)
@@ -224,7 +224,6 @@ def readFromGenerali(fileName_Generali, fileGenerali_read, fileToWrite, totale_s
 
     print("File ", fileName_Generali, " rinominato con '_checked' come desinenza.\n")
 
-    # input("Premere INVIO per proseguire...\n")
 
 
 #   -----------------------------------------------------------------------------------------
@@ -390,7 +389,7 @@ def readFromCattolica(fileName_Cattolica, pathName_read, fileToWrite, totale_sos
     # Ricerca della riga nel foglio 'PRIMA NOTA' in cui andare a salvare i dati corrispondenti alla data newDateToCompare
     PrimaNotaRowData = findPrimaNotaRow_forIncassiProvvigioni(datareadPrimaNota, newDateToCompare)
     
-    print("Copia e salvataggio dati in esecuzione, attendere ...\n")
+    print("Copia e salvataggio dati del file ", fileName_Cattolica, " di CATTOLICA in esecuzione, attendere ...\n")
 
     with pd.ExcelWriter(fileToWrite, engine ="openpyxl", mode='a', if_sheet_exists='overlay') as writer:
         df_BonificiCattolica.to_excel(writer, index = False, header = False, sheet_name = sheetNameCattolica, startrow = BonificiRowData+1, startcol = 1)
@@ -417,9 +416,6 @@ def readFromTutela(fileName_Tutela, fileTutela_read, fileToWrite, totale_sospesi
 
     findImporto = False
     # read by default 1st sheet of an excel file
-    # ATTENZIONE: per come e' fatto attualmente il file di GENERALI vi sono molte righe prima della tabella con i dati, quindi posso non considerare il parametro 'header' nella read_excel.
-    # Dovesse pero' cambiare il formato come quello di CATTOLICA bisognera' probabilmente modificare il funzionamento di fileImporto, in quanto se non viene
-    # utilizzato il parametro 'header' vengono letti tutti i dati da dopo la riga di intestazione del file excel.
     dataframe1 = pd.read_excel(fileTutela_read, usecols='C,H,I,J,L,M')
 
     print("\nLettura file TUTELA eseguita correttamente.\n")
@@ -591,7 +587,7 @@ def readFromTutela(fileName_Tutela, fileTutela_read, fileToWrite, totale_sospesi
     for i in range(0, len(totale_IncassiProvvigioni)):
         PrimaNotaRowData.append(findPrimaNotaRow_forIncassiProvvigioni(datareadPrimaNota, totale_IncassiProvvigioni[i][TOT_DATA]))
 
-    print("Copia e salvataggio dati in esecuzione, attendere ...\n")
+    print("Copia e salvataggio dati del file ", fileName_Tutela, " di TUTELA LEGALE in esecuzione, attendere ...\n")
 
     # In BonificiRowData ho gli indici delle righe in ordine crescente di data, ma in df_BonificiTutela i vari dati si trovano in ordine decrescente di data, per questo motivo faccio un reverse for loop in modo tale da partire a salvare i dati con data piu' recente (BonificiRowData[i] con i = len(BonificiRowData)) fino ad arrivare a quelli con data meno recente (BonificiRowData[i] con i = 0)
 
@@ -606,7 +602,6 @@ def readFromTutela(fileName_Tutela, fileTutela_read, fileToWrite, totale_sospesi
                     # print("\nBefore: ", df_BonificiTutela.values[k, 1:4])
                     final_listTutela.append(df_BonificiTutela.values[k, 1:4])
                     # print("\nAfter: ", *final_listTutela, sep='\n')
-
 
             final_dfTutela = pd.DataFrame(final_listTutela)
             final_dfTutela.to_excel(writer, index = False, header = False, sheet_name = sheetNameTutela, startrow = BonificiRowData[0][i] + 1, startcol = 1)
@@ -631,7 +626,6 @@ def readFromTutela(fileName_Tutela, fileTutela_read, fileToWrite, totale_sospesi
                     final_listSospesi.append(temp_listSospesiTutela)
                     break
 
-
             final_dfSospesi = pd.DataFrame(final_listSospesi)
             final_dfSospesi.to_excel(writer, index = False, header = False, sheet_name = sheetNameSospesi, startrow = SospesiRowData[0][i] + 1, startcol = 0)
 
@@ -646,7 +640,7 @@ def readFromTutela(fileName_Tutela, fileTutela_read, fileToWrite, totale_sospesi
             df_IncassiProvvigioniTutela.to_excel(writer, index = False, header = False, sheet_name = sheetNamePrimaNota, startrow = PrimaNotaRowData[i]+ROW_INDEX_TOT_TUTELA, startcol = 2)
 
             
-    print("Copia dei dati del file ", fileName_Tutela, " di TUTELA terminata.\n")
+    print("Copia dei dati del file ", fileName_Tutela, " di TUTELA LEGALE terminata.\n")
     
     #  Rinomino il file di cui ho appena salvato i dati con la desinenza '_checked'
     renameFileChecked(fileTutela_read)
@@ -660,7 +654,7 @@ def readFromTutela(fileName_Tutela, fileTutela_read, fileToWrite, totale_sospesi
 #   -----------------------------------------------------------------------------------------
 #   -----------------------------------------------------------------------------------------
 #   -----------------------------------------------------------------------------------------
-# Funzione per trovare tutti i file di cui non sono ancora stati salvati i dati
+# Funzione per trovare tutti i file di cui non sono ancora stati analizzati e salvati i dati
 def findFilesNotChecked(pathName, filesToParse):
     dir_path = pathName
 
@@ -690,16 +684,20 @@ def renameFileChecked(pathFileName):
     os.rename(pathFileName, renameFile)
 
 
+#   -----------------------------------------------------------------------------------------
+#   -----------------------------------------------------------------------------------------
+#   -----------------------------------------------------------------------------------------
+#   -----------------------------------------------------------------------------------------
 # Legge tutti i dati nel foglio SOSPESI e va a scrivere in tutte le tabelle del foglio PRIMA NOTA i relativi sospesi del giorno
 # ATTENZIONE perche' per come e' fatto adesso va a fare questo lavoro per tutti i giorni, anche per quelli che erano gia' stati fatti in precedenza.
 # Bisogna quindi ottimizzare il tutto per far eseguire questa funzione solamente per i giorni di cui non sono stati ancora scritti i SOSPESI NUOVI
-def readSospesiFromExcel(fileToWrite, lastDatetime):
+def manageSospesi(fileToWrite, lastDatetime):
     sheetNameSospesi = "SOSPESI"
 
     # Caricamento dei dati dal foglio 'SOSPESI'
     dataSospesiExcel = pd.read_excel(fileToWrite, sheet_name = sheetNameSospesi, usecols='A,B,E,I,K')
 
-    print("Lettura dati dal sheet SOSPESI eseguita con successo.\n")
+    print("Lettura dati dal foglio 'SOSPESI' eseguita con successo.\n")
 
     # A -> 0 : DATA
     # B -> 1 : IMPORTO
@@ -719,7 +717,8 @@ def readSospesiFromExcel(fileToWrite, lastDatetime):
     # Inserisco 45 e non 50 per non saltare troppe righe per precauzione
     SIZEOF_SINGLE_TABLE_SOSPESI = int(45)
 
-    previousDate = datetime.date(2024, 1, 1)    # Data di default
+    defaultDate = datetime.date(2020, 1, 1)    # Data di default
+    previousDate = defaultDate
 
     todayDate = datetime.datetime.today()
     todayDate = todayDate.replace(hour = 0, minute = 0, second = 0, microsecond = 0)
@@ -743,7 +742,7 @@ def readSospesiFromExcel(fileToWrite, lastDatetime):
                 elif(dataSospesiExcel.isnull().iat[i, IMPORTO] == False): # and dataSospesiExcel.iat[i, PAGATO].upper() == "NO"):
                     if(previousDate != dataSospesiExcel.iat[i, DATA]):      # Se la data corrente e' diversa da quella precedente vuol dire che sto salvando un nuovo record della listSospesiNew
                         # if(len(listSospesiNew) == 0):   # Per non fare l'append quanto si ha totSospesiNew tutta a 0 all'inizio
-                        if(totSospesiNew.date != datetime.date(2024, 1, 1)):    # Per non fare l'append quanto si ha totSospesiNew tutta a 0 all'inizio
+                        if(totSospesiNew.date != defaultDate):    # Per non fare l'append quanto si ha totSospesiNew tutta a 0 all'inizio
                             listSospesiNew.append(copy.deepcopy(totSospesiNew))
 
                         # Resetto totSospesiNew
@@ -777,7 +776,7 @@ def readSospesiFromExcel(fileToWrite, lastDatetime):
     strExecuted = list(["Eseguito"])
     df_sospesiExecuted = pd.DataFrame(strExecuted)
 
-    # Scrittura dei TOTALI SOSPESI nel foglio 'PRIMA NOTA'
+    # Scrittura dei TOTALI NUOVI SOSPESI nel foglio 'PRIMA NOTA'
     writeSospesi_inPrimaNota(listSospesiNew, fileToWrite)
 
     if(len(indexRowExecuted) > 0):

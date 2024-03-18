@@ -8,6 +8,10 @@ dateFormat = "%d/%m/%Y"
 
 subagentAgency = list()
 
+#   -----------------------------------------------------------------------------------------
+#   -----------------------------------------------------------------------------------------
+#   -----------------------------------------------------------------------------------------
+#   -----------------------------------------------------------------------------------------
 # Funzione per ottenere la list contenente SUBAGENTE e relativa AGENZIA partendo dai dati presenti nel file 'elenco_collaboratori_agenzia.xlsx'
 def getAgencyFromSubagent():
     current_directory = os.getcwd()
@@ -23,7 +27,11 @@ def getAgencyFromSubagent():
     subagentAgency = df_agency.values.tolist()
 
 
-# Funzione per trovare l'AGENZIA a cui fa riferimento un SUBAGENTE dato in input
+#   -----------------------------------------------------------------------------------------
+#   -----------------------------------------------------------------------------------------
+#   -----------------------------------------------------------------------------------------
+#   -----------------------------------------------------------------------------------------
+# Funzione per trovare l'AGENZIA a cui fa riferimento un SUBAGENTE il cui Nome Cognome viene passato in input
 def findAgencyFromSubagent(subagentName):
     NOME = int(0)
     AGENZIA = int(1)
@@ -39,7 +47,11 @@ def findAgencyFromSubagent(subagentName):
     return "Collaboratore non presente in tabella."
 
     
-
+#   -----------------------------------------------------------------------------------------
+#   -----------------------------------------------------------------------------------------
+#   -----------------------------------------------------------------------------------------
+#   -----------------------------------------------------------------------------------------
+# Funzione che aggiorna i TOTALI NUOVI SOSPESI dell'AGENZIA di riferimento passata in input
 def updateAgencyTotaleSospesi(totSospesi, importo, agenzia):
     if(agenzia == "GALLARATE"):
         totSospesi.totGallarate += importo
@@ -56,8 +68,13 @@ def updateAgencyTotaleSospesi(totSospesi, importo, agenzia):
     else:
         # raise Exception("\nERRORE: agenzia a cui assegnare l'importo del versamento non trovata.\n")
         print("\nAgenzia non trovata.\n")
-    
 
+
+#   -----------------------------------------------------------------------------------------
+#   -----------------------------------------------------------------------------------------
+#   -----------------------------------------------------------------------------------------
+#   -----------------------------------------------------------------------------------------
+# Scrive i NUOVI SOSPESI per ogni AGENZIA nel foglio 'PRIMA NOTA'
 def writeSospesi_inPrimaNota(listSospesiNew, filePathnameToWrite):
 
     listSospesiVecchi = [["SOSPESI RHO"],
@@ -82,7 +99,7 @@ def writeSospesi_inPrimaNota(listSospesiNew, filePathnameToWrite):
             # Caricamento di tutti i dati relativi alla colonna 'A' dal foglio 'PRIMA NOTA' -> mi serve per avere tutte le date
             dataframePrimaNota = pd.read_excel(filePathnameToWrite, sheet_name = sheetNamePrimaNota, usecols='A')
 
-            print("Lettura sheet PRIMA NOTA eseguita con successo.\n")
+            print("Lettura del foglio 'PRIMA NOTA' eseguita con successo.\n")
 
             # A -> 0 : DATA
             # D -> 1 : CASSA ENTRATE
@@ -135,12 +152,14 @@ def writeSospesi_inPrimaNota(listSospesiNew, filePathnameToWrite):
             df_PrimaNota.to_excel(writer, index = False, header = False, sheet_name = sheetNamePrimaNota, startrow = rowData+37, startcol = 12)    # 12 = 'M'
 
 
-
+#   -----------------------------------------------------------------------------------------
+#   -----------------------------------------------------------------------------------------
+#   -----------------------------------------------------------------------------------------
+#   -----------------------------------------------------------------------------------------
 # Funzione utilizzata per convertire da stringa a 'datetime' il contenuto di una list di input
 def convertStringToDatetime(listToConvert, DATE_INDEX):
     for i in range(0, len(listToConvert)):
         # checking if format matches the date
-        
         res = True
         
         # using try-except to check for truth value
@@ -153,11 +172,10 @@ def convertStringToDatetime(listToConvert, DATE_INDEX):
             res = False
 
 
-
-        # if(isinstance(listToConvert[i], str) and listToConvert[i] != 'DATA' and listToConvert[i] != 'TOTALE'):
-        #     listToConvert[i] = datetime.datetime.strptime(listToConvert[i], "%d/%m/%Y")
-
-
+#   -----------------------------------------------------------------------------------------
+#   -----------------------------------------------------------------------------------------
+#   -----------------------------------------------------------------------------------------
+#   -----------------------------------------------------------------------------------------
 # Funzione per convertire le date di una list da 'datetime' a stringa formato '%d/%m/%Y'
 def convertDatetimeToString(datetimeToConvert, DATE_INDEX):
     for i in range(0, len(datetimeToConvert)):
@@ -168,6 +186,11 @@ def convertDatetimeToString(datetimeToConvert, DATE_INDEX):
             print("\nErrore in convertDatetimeToString.\n")
 
 
+#   -----------------------------------------------------------------------------------------
+#   -----------------------------------------------------------------------------------------
+#   -----------------------------------------------------------------------------------------
+#   -----------------------------------------------------------------------------------------
+# Funzione per convertire una singola datetime in una stringa nel formato '%d/%m/%Y' 
 def convertDatetimeValueToString(datetimeToConvert):
         try:
             if(isinstance(datetimeToConvert, datetime.datetime)):
@@ -178,6 +201,11 @@ def convertDatetimeValueToString(datetimeToConvert):
             print("\nErrore in convertDatetimeToString.\n")
 
 
+#   -----------------------------------------------------------------------------------------
+#   -----------------------------------------------------------------------------------------
+#   -----------------------------------------------------------------------------------------
+#   -----------------------------------------------------------------------------------------
+# Funzione per convertire un importo in formato stringa o INTEGER in un float
 def convertToFloat(importo):
     if(isinstance(importo, str)):
         if(len(importo) == 1 and importo == '-'):
@@ -192,6 +220,11 @@ def convertToFloat(importo):
     return importo_float
 
 
+#   -----------------------------------------------------------------------------------------
+#   -----------------------------------------------------------------------------------------
+#   -----------------------------------------------------------------------------------------
+#   -----------------------------------------------------------------------------------------
+# Funzione per trovare l'indice della riga nel foglio 'PRIMA NOTA' in cui andare a scrivere gli INCASSI e le PROVVIGIONI per ogni compagnia ad una certa data passata in input
 def findPrimaNotaRow_forIncassiProvvigioni(datareadPrimaNota, newDateTime):
     DATA = int(0)
 
@@ -219,6 +252,10 @@ def findPrimaNotaRow_forIncassiProvvigioni(datareadPrimaNota, newDateTime):
     raise Exception("\nData non trovata nel foglio 'PRIMA NOTA'.\n")
 
 
+#   -----------------------------------------------------------------------------------------
+#   -----------------------------------------------------------------------------------------
+#   -----------------------------------------------------------------------------------------
+#   -----------------------------------------------------------------------------------------
 # Funzione che restituisce una datetime.datetime corrispondente all'ultimo giorno del mese/anno dato in input
 def getLastDatetimeOfAMonth(current_datetime):
     res = calendar.monthrange(current_datetime.year, current_datetime.month)
@@ -230,7 +267,10 @@ def getLastDatetimeOfAMonth(current_datetime):
     return lastDatetime
 
 
-
+#   -----------------------------------------------------------------------------------------
+#   -----------------------------------------------------------------------------------------
+#   -----------------------------------------------------------------------------------------
+#   -----------------------------------------------------------------------------------------
 def convertMonthYearString_toDatetime(monthYearString):
    
     spaceIndex = monthYearString.find(' ')
