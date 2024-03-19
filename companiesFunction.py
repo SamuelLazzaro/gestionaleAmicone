@@ -365,12 +365,12 @@ def readFromCattolica(fileName_Cattolica, pathName_read, fileToWrite, totale_sos
             importo_versamento = convertToFloat(dataframe1.iat[i, IMPORTO])
 
             # Calcolo dei totali degli INCASSI e delle PROVVIGIONI di GENERALI
-            # Assegno, Contante, Bonifico su CC di Agenzia, Bonifico su CC di Direzione (Finanziamento al consumo), Automatico (incasso = 0.0): si INCASSI, si PROVVIGIONI
-            # Rid, MPos: no INCASSI, si PROVVIGIONI
-            if(dataframe1.iat[i, MOD_PAGAMENTO].find('Assegno') != -1 or dataframe1.iat[i, MOD_PAGAMENTO] == 'Contante' or dataframe1.iat[i, MOD_PAGAMENTO].find('Bonifico') != -1 or dataframe1.iat[i, MOD_PAGAMENTO] == 'Automatico'):
+            # Assegno, Contante, Bonifico su CC di Agenzia, Bonifico su CC di Direzione (Finanziamento al consumo): si INCASSI, si PROVVIGIONI
+            # Rid, MPos, Automatico (incasso = 0.0): no INCASSI, si PROVVIGIONI
+            if(dataframe1.iat[i, MOD_PAGAMENTO].find('Assegno') != -1 or dataframe1.iat[i, MOD_PAGAMENTO] == 'Contante' or dataframe1.iat[i, MOD_PAGAMENTO].find('Bonifico') != -1):
                 totale_incassi += importo_incasso
                 totale_provvigioni += importo_provvigione
-            elif(dataframe1.iat[i, MOD_PAGAMENTO] == 'Rid' or dataframe1.iat[i, MOD_PAGAMENTO] == 'MPos'):
+            elif(dataframe1.iat[i, MOD_PAGAMENTO] == 'Rid' or dataframe1.iat[i, MOD_PAGAMENTO] == 'MPos' or dataframe1.iat[i, MOD_PAGAMENTO] == 'Automatico'):
                 totale_provvigioni += importo_provvigione
             else:
                 raise Exception("\nTrovato un metodo di pagamento non convenzionale nel file di CATTOLICA.\n")
