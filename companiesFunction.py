@@ -895,8 +895,8 @@ def manageSospesi(fileToWrite, lastDatetime):
     PAGATO = int(3)
     NOTE = int(4)
 
-    # Inserisco 45 e non 50 per non saltare troppe righe per precauzione
-    SIZEOF_SINGLE_TABLE_SOSPESI = int(45)
+    # Inserisco 55 e non 60 per non saltare troppe righe per precauzione
+    SIZEOF_SINGLE_TABLE_SOSPESI = int(55)
 
     defaultDate = datetime.date(2020, 1, 1)    # Data di default
     previousDate = defaultDate
