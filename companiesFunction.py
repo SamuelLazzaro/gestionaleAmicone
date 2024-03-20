@@ -106,6 +106,10 @@ def readFromGenerali(fileName_Generali, fileGenerali_read, fileToWrite, totale_s
         if(findImporto and dataframe1.isnull().iat[i, NUM_POLIZZA] == False and dataframe1.isnull().iat[i, ANAGRAFICA] == False and dataframe1.isnull().iat[i, IMPORTO] == False):
             # NON devo salvare le righe di dati vuoti che si trovano all'interno della tabella con i dati da salvare
 
+            # Se nella colonna NUMERO POLIZZA trovo la scritta "Restituz. RID agenziale" (es. GENERALI 01/03/2024) salto completamente la riga in quanto e' un caso particolarissimo
+            if(dataframe1.iat[i, NUM_POLIZZA].find('Restituz. RID agenziale') != -1):
+                continue
+
             # L'importo della provvigione e dell'incasso puo' essere negativo
             # Modifico l'importo della singola provvigione in un float
             importo_provvigione = convertToFloat(dataframe1.iat[i, PROVVIGIONI])
@@ -383,11 +387,11 @@ def readFromCattolica(fileName_Cattolica, pathName_read, fileToWrite, totale_sos
                 cattolica_importo.append(importo_versamento)
 
             # Foglio 'SOSPESI' deve contenere:
-            # - BONIFICI FINANZIAMENTO AL CONSUMO con importo >= 0.0
-            # - ASSEGNI e CONTANTI con importo >= 0.0
+            # - Bonifico su CC di Direzione con importo >= 0.0
+            # - Assegno e Contante con importo >= 0.0
             # Foglio 'RIMBORSI' deve contenere:
-            # - BONIFICI CATTOLICA (NON Finanziamento al Consumo) con importo < 0.0
-            # - ASSEGNI e CONTANTI con importo < 0.0
+            # - Bonifico su CC di Agenzia con importo < 0.0
+            # - Assegno e Contante con importo < 0.0
             elif((dataframe1.iat[i, MOD_PAGAMENTO] == 'Bonifico su CC di Agenzia' and importo_versamento < 0.0) or (dataframe1.iat[i, MOD_PAGAMENTO] == 'Bonifico su CC di Direzione' and importo_versamento > 0.0) or dataframe1.iat[i, MOD_PAGAMENTO].find('Assegno') != -1 or dataframe1.iat[i, MOD_PAGAMENTO] == 'Contante'):
                 dateString = dateToCompare.strftime(dateFormat)
                 
@@ -619,7 +623,6 @@ def readFromTutela(fileName_Tutela, fileTutela_read, fileToWrite, totale_sospesi
             # Foglio 'RIMBORSI' deve contenere:
             # - ASSEGNI e CONTANTI con importo < 0.0
             # - BONIFICO con importo < 0.0 (N.B. In TUTELA LEGALE al momento non vi e' il FINANZIAMENTO AL CONSUMO)
-            # N.B. Nel caso di CONTANTI o ASSEGNO BANCARIO vengono aggiunti nel foglio 'SOSPESI' a prescindere dal fatto che l'importo sia > o < 0.0
             elif((dataframe1.iat[i, MOD_PAGAMENTO] == 'BB' and importo_versamento < 0.0) or dataframe1.iat[i, MOD_PAGAMENTO] == 'CC' or dataframe1.iat[i, MOD_PAGAMENTO] == 'AB'):
                 # Al momento il Finanziamento a Consumo (AGOS) non e' possibile con TUTELA LEGALE
                 dateAs_datetimeType = dataframe1.iat[i, DATA]
