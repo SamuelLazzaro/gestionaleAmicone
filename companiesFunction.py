@@ -171,7 +171,7 @@ def readFromGenerali(fileName_Generali, fileGenerali_read, fileToWrite, totale_s
 
             # Gestione SOSPESI:
             # - BONIFICI (non Finanziamento al consumo): vengono inseriti nei RIMBORSI nel caso in cui abbiano degli importi negativi
-            # - CONTANTI o ASSEGNO BANCARIO/POSTALE GENERALI: vengono inseriti nei SOSPESI se hanno degli importi positivi, oppure nei RIMBORSI se hanno degli importi negativi
+            # - CONTANTI o ASSEGNO BANCARIO/POSTALE o ANTICIPO AGENTE GENERALI: vengono inseriti nei SOSPESI se hanno degli importi positivi, oppure nei RIMBORSI se hanno degli importi negativi
             # ATTENZIONE:
             if (dataframe1.iat[i, MOD_PAGAMENTO] == 'CONTANTI' or dataframe1.iat[i, MOD_PAGAMENTO].find('ASSEGNO') != -1 or dataframe1.iat[i, MOD_PAGAMENTO] == 'ANTICIPO AGENTE' or (dataframe1.iat[i, MOD_PAGAMENTO] == 'BONIFICO' and dataframe1.iat[i, NUM_POLIZZA].find('Fin. Consumo') == -1 and importo_versamento < 0.0)):
                 dateString = dateToCompare.strftime(dateFormat)
