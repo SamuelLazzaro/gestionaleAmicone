@@ -15,18 +15,6 @@ try:
     totale_sospesi_vecchi = 0
     totale_sospesi_nuovi = TotaleSospesiNuovi()
 
-    # Gestione versamenti effettuati
-    # versamenti_SI_NO = input("\nSono stati eseguiti dei versamenti? [SI]/[NO]: ")
-    # versamenti_SI_NO = versamenti_SI_NO.upper()
-
-    # if(versamenti_SI_NO[0] == 'S'):
-    #     agenzia_versamenti = input("\nPer quale agenzia e' stato eseguito il versamento? Digitare il numero corrispondente all'agenzia e premere INVIO:\n1. RHO\n2. SOMMA LOMBARDO\n3. LEGNANO\n4. GALLARATE\n5. n\n\nAgenzia numero: ")
-    #     importo_versamenti = input("\nInserire l'importo del versamento: ")
-
-    #     # Sostituisco un eventuale ',' con un '.' per non avere poi un errore con la funzione float()
-    #     importo_versamenti = importo_versamenti.replace(',', '.')
-    #     importo_versamenti = float(importo_versamenti)
-
     current_working_directory = os.getcwd()
 
     print("Percorso attuale: ", current_working_directory)
