@@ -26,7 +26,7 @@ try:
 
     totale = '-200.50'
 
-    importo = float(totale)
+    importo = int(502.1324235346)
     print(importo)
 
 except Exception as e:

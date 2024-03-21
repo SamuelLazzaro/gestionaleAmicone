@@ -46,7 +46,7 @@ def readFromGenerali(fileName_Generali, fileGenerali_read, fileToWrite, totale_s
     # utilizzato il parametro 'header' vengono letti tutti i dati da dopo la riga di intestazione del file excel.
     dataframe1 = pd.read_excel(fileGenerali_read, usecols='A,B,C,H,J,K,P')
 
-    print("\nLettura file GENERALI eseguita correttamente.\n")
+    print("\nLettura file GENERALI ", fileName_Generali, " eseguita correttamente.\n")
 
     # A -> 0 : NUMERO POLIZZA
     # B -> 1 : ANAGRAFICA (CONTRAENTE)
@@ -119,12 +119,12 @@ def readFromGenerali(fileName_Generali, fileGenerali_read, fileToWrite, totale_s
             # Calcolo dei totali degli INCASSI e delle PROVVIGIONI di GENERALI
             # BONIFICO, CONTANTI, ASSEGNO BANCARIO/POSTALE: si INCASSI, si PROVVIGIONI
             # MOBILE POS, VIRTUAL POS: no INCASSI, si PROVVIGIONI
-            # ANTICIPO AGENTE: si INCASSI, no PROVVIGIONI
+            # ANTICIPO AGENTE: si INCASSI, si PROVVIGIONI
             # FINANZIAMENTO AL CONSUMO: no INCASSI, si PROVVIGIONI
             # REGOLAZIONE SU CONTO COMPENSO: no INCASSI, si PROVVIGIONI prendendo l'importo dell'INCASSO e cambiandolo di segno
             # COMPENSAZIONE: normalmente ha sia importo_incasso sia importo_provvigione = 0.0
 
-            if(dataframe1.iat[i, MOD_PAGAMENTO] == 'BONIFICO' or dataframe1.iat[i, MOD_PAGAMENTO] == 'CONTANTI' or dataframe1.iat[i, MOD_PAGAMENTO].find('ASSEGNO') != -1):
+            if(dataframe1.iat[i, MOD_PAGAMENTO] == 'BONIFICO' or dataframe1.iat[i, MOD_PAGAMENTO] == 'CONTANTI' or dataframe1.iat[i, MOD_PAGAMENTO].find('ASSEGNO') != -1 or dataframe1.iat[i, MOD_PAGAMENTO] == 'ANTICIPO AGENTE'):
                 totale_incassi += importo_incasso
                 if(importo_incasso >= 0.0):
                     totale_provvigioni += importo_provvigione
@@ -133,8 +133,9 @@ def readFromGenerali(fileName_Generali, fileGenerali_read, fileToWrite, totale_s
                     totale_provvigioni += (-abs(importo_provvigione))
             elif(dataframe1.iat[i, MOD_PAGAMENTO] == 'MOBILE POS' or dataframe1.iat[i, MOD_PAGAMENTO] == 'VIRTUAL POS'):
                 totale_provvigioni += importo_provvigione
-            elif(dataframe1.iat[i, MOD_PAGAMENTO] == 'ANTICIPO AGENTE' or dataframe1.iat[i, MOD_PAGAMENTO] == 'COMPENSAZIONE'):
+            elif(dataframe1.iat[i, MOD_PAGAMENTO] == 'COMPENSAZIONE'):
                 totale_incassi += importo_incasso
+                totale_provvigioni += importo_provvigione
             elif(dataframe1.iat[i, MOD_PAGAMENTO] == 'FINANZIAMENTO AL CONSUMO'):
                 totale_provvigioni += importo_provvigione
             elif(dataframe1.iat[i, MOD_PAGAMENTO].find('REGOLAZIONE SU CONTO COMPENSO') != -1):
@@ -172,7 +173,7 @@ def readFromGenerali(fileName_Generali, fileGenerali_read, fileToWrite, totale_s
             # - BONIFICI (non Finanziamento al consumo): vengono inseriti nei RIMBORSI nel caso in cui abbiano degli importi negativi
             # - CONTANTI o ASSEGNO BANCARIO/POSTALE GENERALI: vengono inseriti nei SOSPESI se hanno degli importi positivi, oppure nei RIMBORSI se hanno degli importi negativi
             # ATTENZIONE:
-            if (dataframe1.iat[i, MOD_PAGAMENTO] == 'CONTANTI' or dataframe1.iat[i, MOD_PAGAMENTO].find('ASSEGNO') != -1 or (dataframe1.iat[i, MOD_PAGAMENTO] == 'BONIFICO' and dataframe1.iat[i, NUM_POLIZZA].find('Fin. Consumo') == -1 and importo_versamento < 0.0)):
+            if (dataframe1.iat[i, MOD_PAGAMENTO] == 'CONTANTI' or dataframe1.iat[i, MOD_PAGAMENTO].find('ASSEGNO') != -1 or dataframe1.iat[i, MOD_PAGAMENTO] == 'ANTICIPO AGENTE' or (dataframe1.iat[i, MOD_PAGAMENTO] == 'BONIFICO' and dataframe1.iat[i, NUM_POLIZZA].find('Fin. Consumo') == -1 and importo_versamento < 0.0)):
                 dateString = dateToCompare.strftime(dateFormat)
 
                 if(importo_versamento >= 0.0):
@@ -299,7 +300,7 @@ def readFromCattolica(fileName_Cattolica, pathName_read, fileToWrite, totale_sos
     dataframe1 = pd.read_excel(pathName_read, sheet_name='Incassi', usecols='A,E,H,I,K,Y,Z')
     # Non avendo inserito il parametro 'header' nella read_excel, la 1^a riga di dataframe1 contiene gia' i dati
 
-    print("\nLettura file CATTOLICA eseguita correttamente.")
+    print("\nLettura file CATTOLICA ", fileName_Cattolica, " eseguita correttamente.")
 
     # A -> 0 : CONTRAENTE
     # E -> 1 : NUMERO POLIZZA
@@ -364,9 +365,13 @@ def readFromCattolica(fileName_Cattolica, pathName_read, fileToWrite, totale_sos
             # NON devo salvare le righe di dati vuoti che si trovano all'interno della tabella con i dati da salvare
 
             # Modifico l'importo della singola provvigione in un float
-            importo_incasso = convertToFloat(dataframe1.iat[i, IMPORTO])
-            importo_provvigione = convertToFloat(dataframe1.iat[i, PROVVIGIONI])
             importo_versamento = convertToFloat(dataframe1.iat[i, IMPORTO])
+            importo_incasso = convertToFloat(dataframe1.iat[i, IMPORTO])
+            if(importo_incasso >= 0.0):
+                importo_provvigione = convertToFloat(dataframe1.iat[i, PROVVIGIONI])
+            else:
+                # Se l'importo del premio e' < 0, allora anche la provvigione deve essere < 0
+                importo_provvigione = -abs(convertToFloat(dataframe1.iat[i, PROVVIGIONI]))
 
             # Calcolo dei totali degli INCASSI e delle PROVVIGIONI di GENERALI
             # Assegno, Contante, Bonifico su CC di Agenzia, Bonifico su CC di Direzione (Finanziamento al consumo): si INCASSI, si PROVVIGIONI
@@ -526,7 +531,7 @@ def readFromTutela(fileName_Tutela, fileTutela_read, fileToWrite, totale_sospesi
     # read by default 1st sheet of an excel file
     dataframe1 = pd.read_excel(fileTutela_read, usecols='C,H,I,J,L,M')
 
-    print("\nLettura file TUTELA eseguita correttamente.\n")
+    print("\nLettura file TUTELA ", fileName_Tutela, " eseguita correttamente.\n")
 
     # C -> 0 : NUMERO POLIZZA
     # H -> 1 : MODALITA' PAGAMENTO
@@ -589,9 +594,12 @@ def readFromTutela(fileName_Tutela, fileTutela_read, fileToWrite, totale_sospesi
             # NON devo salvare le righe di dati vuoti che si trovano all'interno della tabella con i dati da salvare
 
             # Modifico l'importo della singola provvigione in un float
-            importo_incasso = convertToFloat(dataframe1.iat[i, IMPORTO])
-            importo_provvigione = convertToFloat(dataframe1.iat[i, PROVVIGIONI])
             importo_versamento = convertToFloat(dataframe1.iat[i, IMPORTO])
+            importo_incasso = convertToFloat(dataframe1.iat[i, IMPORTO])
+            if(importo_incasso >= 0.0):
+                importo_provvigione = convertToFloat(dataframe1.iat[i, PROVVIGIONI])
+            else:
+                importo_provvigione = -abs(convertToFloat(dataframe1.iat[i, PROVVIGIONI]))
 
             if(dataframe1.iat[i, MOD_PAGAMENTO] != 'CC' and dataframe1.iat[i, MOD_PAGAMENTO] != 'BB' and dataframe1.iat[i, MOD_PAGAMENTO] != 'AB'):
                 raise Exception("\nTrovato metodo di pagamento non convenzionale in TUTELA LEGALE.\n")
@@ -753,68 +761,67 @@ def readFromTutela(fileName_Tutela, fileTutela_read, fileToWrite, totale_sospesi
     # In BonificiRowData ho gli indici delle righe in ordine crescente di data, ma in df_BonificiTutela i vari dati si trovano in ordine decrescente di data, per questo motivo faccio un reverse for loop in modo tale da partire a salvare i dati con data piu' recente (BonificiRowData[i] con i = len(BonificiRowData)) fino ad arrivare a quelli con data meno recente (BonificiRowData[i] con i = 0)
 
     # Salvataggio dati in BONIFICI TUTELA
-    with pd.ExcelWriter(fileToWrite, engine ="openpyxl", mode='a', if_sheet_exists='overlay') as writer:
-        for i in range(len(BonificiRowData[0])-1, -1, -1):
+    if(len(BonificiRowData[0]) > 0):
+        with pd.ExcelWriter(fileToWrite, engine ="openpyxl", mode='a', if_sheet_exists='overlay') as writer:
+            for i in range(len(BonificiRowData[0])-1, -1, -1):
 
-            final_listTutela = []
+                final_listTutela = []
 
-            for k in range(len(df_BonificiTutela)-1, -1, -1):
-                if(BonificiRowData[1][i] == df_BonificiTutela.iat[k, 0]):
-                    # print("\nBefore: ", df_BonificiTutela.values[k, 1:4])
-                    final_listTutela.append(df_BonificiTutela.values[k, 1:4])
-                    # print("\nAfter: ", *final_listTutela, sep='\n')
+                for k in range(len(df_BonificiTutela)-1, -1, -1):
+                    if(BonificiRowData[1][i] == df_BonificiTutela.iat[k, 0]):
+                        final_listTutela.append(df_BonificiTutela.values[k, 1:4])
 
-            final_dfTutela = pd.DataFrame(final_listTutela)
-            final_dfTutela.to_excel(writer, index = False, header = False, sheet_name = sheetNameTutela, startrow = BonificiRowData[0][i] + 1, startcol = 1)
+                final_dfTutela = pd.DataFrame(final_listTutela)
+                final_dfTutela.to_excel(writer, index = False, header = False, sheet_name = sheetNameTutela, startrow = BonificiRowData[0][i] + 1, startcol = 1)
 
 
     # Salvataggio dati in SOSPESI
-    with pd.ExcelWriter(fileToWrite, engine ="openpyxl", mode='a', if_sheet_exists='overlay') as writer:
-        for i in range(len(SospesiRowData[0])-1, -1, -1):
+    if(len(SospesiRowData[0]) > 0):
+        with pd.ExcelWriter(fileToWrite, engine ="openpyxl", mode='a', if_sheet_exists='overlay') as writer:
+            for i in range(len(SospesiRowData[0])-1, -1, -1):
 
-            final_listSospesi = []
+                final_listSospesi = []
 
-            for k in range(len(df_SospesiTutela)-1, -1, -1):
-                if(SospesiRowData[1][i] == df_SospesiTutela.iat[k, 0]):
-                    # Converto tutte le date da formato 'datetime' a formato stringa "%d/%m/%Y"
-                    # df_SospesiTutela.values[k, 0] e' un oggetto di tipo pandas Timestamp
-                    fromTimestampToDatetime = (df_SospesiTutela.values[k, 0]).date()
-                    # Converto la datetime.date in una datetime.datetime
-                    fromTimestampToDatetime = datetime.datetime.combine(fromTimestampToDatetime, datetime.datetime.min.time())
-                    datetimeString = convertDatetimeValueToString(fromTimestampToDatetime)
-                    temp_listSospesiTutela = df_SospesiTutela.values[k, 0:8].tolist() # Conversione da pandas dataframe a list
-                    temp_listSospesiTutela[0] = datetimeString  # Assegno la data come stringa al 1° valore della list
-                    final_listSospesi.append(temp_listSospesiTutela)
-                    break
+                for k in range(len(df_SospesiTutela)-1, -1, -1):
+                    if(SospesiRowData[1][i] == df_SospesiTutela.iat[k, 0]):
+                        # Converto tutte le date da formato 'datetime' a formato stringa "%d/%m/%Y"
+                        # df_SospesiTutela.values[k, 0] e' un oggetto di tipo pandas Timestamp
+                        fromTimestampToDatetime = (df_SospesiTutela.values[k, 0]).date()
+                        # Converto la datetime.date in una datetime.datetime
+                        fromTimestampToDatetime = datetime.datetime.combine(fromTimestampToDatetime, datetime.datetime.min.time())
+                        datetimeString = convertDatetimeValueToString(fromTimestampToDatetime)
+                        temp_listSospesiTutela = df_SospesiTutela.values[k, 0:8].tolist() # Conversione da pandas dataframe a list
+                        temp_listSospesiTutela[0] = datetimeString  # Assegno la data come stringa al 1° valore della list
+                        final_listSospesi.append(temp_listSospesiTutela)                     
 
-            final_dfSospesi = pd.DataFrame(final_listSospesi)
-            final_dfSospesi.to_excel(writer, index = False, header = False, sheet_name = sheetNameSospesi, startrow = SospesiRowData[0][i] + 1, startcol = 0)
+                final_dfSospesi = pd.DataFrame(final_listSospesi)
+                final_dfSospesi.to_excel(writer, index = False, header = False, sheet_name = sheetNameSospesi, startrow = SospesiRowData[0][i] + 1, startcol = 0)
 
 
     # Salvataggio dati in RIMBORSI
-    with pd.ExcelWriter(fileToWrite, engine ="openpyxl", mode='a', if_sheet_exists='overlay') as writer:
-        for i in range(len(RimborsiRowData[0])-1, -1, -1):
+    if(len(RimborsiRowData[0]) > 0):
+        with pd.ExcelWriter(fileToWrite, engine ="openpyxl", mode='a', if_sheet_exists='overlay') as writer:
+            for i in range(len(RimborsiRowData[0])-1, -1, -1):
 
-            final_listRimborsi = []
+                final_listRimborsi = []
+                
+                for k in range(len(df_RimborsiTutela)-1, -1, -1):
+                    if(RimborsiRowData[1][i] == df_RimborsiTutela.iat[k, 0]):
+                        # Converto tutte le date da formato 'datetime' a formato stringa "%d/%m/%Y"
+                        # df_RimborsiTutela.values[k, 0] e' un oggetto di tipo pandas Timestamp
+                        fromTimestampToDatetime = (df_RimborsiTutela.values[k, 0]).date()
+                        # Converto la datetime.date in una datetime.datetime
+                        fromTimestampToDatetime = datetime.datetime.combine(fromTimestampToDatetime, datetime.datetime.min.time())
+                        datetimeString = convertDatetimeValueToString(fromTimestampToDatetime)
+                        temp_listRimborsiTutela = df_RimborsiTutela.values[k, 0:8].tolist() # Conversione da pandas dataframe a list
+                        temp_listRimborsiTutela[0] = datetimeString  # Assegno la data come stringa al 1° valore della list
+                        final_listRimborsi.append(temp_listRimborsiTutela)
 
-            for k in range(len(df_RimborsiTutela)-1, -1, -1):
-                if(RimborsiRowData[1][i] == df_RimborsiTutela.iat[k, 0]):
-                    # Converto tutte le date da formato 'datetime' a formato stringa "%d/%m/%Y"
-                    # df_RimborsiTutela.values[k, 0] e' un oggetto di tipo pandas Timestamp
-                    fromTimestampToDatetime = (df_RimborsiTutela.values[k, 0]).date()
-                    # Converto la datetime.date in una datetime.datetime
-                    fromTimestampToDatetime = datetime.datetime.combine(fromTimestampToDatetime, datetime.datetime.min.time())
-                    datetimeString = convertDatetimeValueToString(fromTimestampToDatetime)
-                    temp_listRimborsiTutela = df_RimborsiTutela.values[k, 0:8].tolist() # Conversione da pandas dataframe a list
-                    temp_listRimborsiTutela[0] = datetimeString  # Assegno la data come stringa al 1° valore della list
-                    final_listRimborsi.append(temp_listRimborsiTutela)
-                    break
-
-            final_dfRimborsi = pd.DataFrame(final_listRimborsi)
-            final_dfRimborsi.to_excel(writer, index = False, header = False, sheet_name = sheetNameRimborsi, startrow = RimborsiRowData[0][i] + 1, startcol = 0)
+                final_dfRimborsi = pd.DataFrame(final_listRimborsi)
+                final_dfRimborsi.to_excel(writer, index = False, header = False, sheet_name = sheetNameRimborsi, startrow = RimborsiRowData[0][i] + 1, startcol = 0)
 
 
-    # Salvataggio TOTALE INCASSI TUTELA LEGALE nel foglio 'PRIMA NOTA'
+    # Salvataggio TOTALE INCASSI e PROVVIGIONI TUTELA LEGALE nel foglio 'PRIMA NOTA'
     with pd.ExcelWriter(fileToWrite, engine ="openpyxl", mode='a', if_sheet_exists='overlay') as writer:
         for i in range(len(PrimaNotaRowData)-1, -1, -1):
             listIncassiProvvigioniTutela = [["Incassi TUTELA LEGALE", totale_IncassiProvvigioni[i][TOT_INCASSI]]]

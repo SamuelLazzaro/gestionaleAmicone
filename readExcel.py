@@ -34,6 +34,7 @@ try:
     month_folder = input("\nInserire nome cartella del mese + anno: ")
     # path = r'C:\LUIGI 04052016\AMICONE LUIGI\DATI DAL 31032008 PC PORTATILE\DATI\CONTABILITA\PARTITE REGISTRATE PER CONTABILITA\GENERALI\PARTITE REGISTRATE\FEBBRAIO 2024'
 
+    start_time = time.time()
     # Conversione in UPPER CASE del mese in input inserito in quanto la cartella in cui si trovano tutti i file ha nome (es.) "FEBBRAIO 2024"
     month_folder = month_folder.upper()
 
@@ -75,8 +76,7 @@ try:
             print(*filesGENERALI_toParse, sep='\n')
 
             if(filesGENERALI_toParse == []):
-                print("\nI dati di tutti i files GENERALI sono stati copiati in PRIMA NOTA.\n")
-                print("--------------------------------------------------------------------\n")
+                print("Nessun file di GENERALI da analizzare.\n")
 
             # fileName_GENERALI = input("Inserire nome completo del file GENERALI con estensione: ")
             for i in range(0, len(filesGENERALI_toParse)):
@@ -100,8 +100,7 @@ try:
             print(*filesCATTOLICA_toParse, sep='\n')
 
             if(filesCATTOLICA_toParse == []):
-                print("\nI dati di tutti i files CATTOLICA sono stati copiati in PRIMA NOTA.\n")
-                print("--------------------------------------------------------------------\n")
+                print("Nessun file di CATTOLICA da analizzare.\n")
 
             # fileName_CATTOLICA = input("Inserire nome completo del file CATTOLICA con estensione: ")
             for i in range(0, len(filesCATTOLICA_toParse)):
@@ -125,15 +124,11 @@ try:
             print(*filesTUTELA_toParse, sep='\n')
 
             if(filesTUTELA_toParse == []):
-                print("\nI dati di tutti i files TUTELA sono stati copiati in PRIMA NOTA.\n")
-                print("--------------------------------------------------------------------\n")
+                print("Nessun file di TUTELA LEGALE da analizzare.\n")
 
             # fileName_TUTELA = input("Inserire nome completo del file TUTELA con estensione: ")
             for i in range(0, len(filesTUTELA_toParse)):
                 pathName_TUTELA = current_working_directory + partialDir_filesTUTELA + '\\' + filesTUTELA_toParse[i]
-
-
-                # print("\nPercorso completo del file: ", pathName_TUTELA)
 
                 readFromTutela(filesTUTELA_toParse[i], pathName_TUTELA, finalPathName, totale_sospesi_nuovi)
 
@@ -147,11 +142,14 @@ try:
 
             fileToManage = 'end'
             
-        # fileToManage = input("\nPremere INVIO per uscire, oppure scegliere un'altra compagnia di cui effettuare la copia dei dati.\n1. GENERALI\n2. CATTOLICA\n3. TUTELA\n\nPremere numero + INVIO oppure solo INVIO per uscire: ")
 except Exception as e:
     print("\n\nError: ", e)
     input()
 
+end_time = time.time()
+execution_time = end_time - start_time
+print("Tempo di esecuzione = ", int(execution_time), " secondi.\n")
 
 print("\nEsecuzione completata.\n")
+
 input()
