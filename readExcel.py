@@ -63,16 +63,26 @@ try:
 
             print(*filesGENERALI_toParse, sep='\n')
 
+            newFilesFind = False
+
             if(filesGENERALI_toParse == []):
                 print("Nessun file di GENERALI da analizzare.\n")
+            else:
+                newFilesFind = True
 
-            # fileName_GENERALI = input("Inserire nome completo del file GENERALI con estensione: ")
+            startTime_Parsing = time.time()
+
             for i in range(0, len(filesGENERALI_toParse)):
                 pathName_GENERALI = current_working_directory + partialDir_filesGENERALI + '\\' + filesGENERALI_toParse[i]
-
-                # print("\nPercorso completo del file: ", pathName_GENERALI)
-
                 readFromGenerali(filesGENERALI_toParse[i], pathName_GENERALI, finalPathName, totale_sospesi_nuovi)
+                print("--------------------------------------------------------------------\n")
+
+            endTime_Parsing = time.time()
+            executionTime_Parsing = endTime_Parsing - startTime_Parsing
+
+            if(newFilesFind == True):
+                print("--------------------------------------------------------------------\n")
+                print("Tempo di esecuzione di tutti i files GENERALI = ", int(executionTime_Parsing), " secondi.\n")
 
             print("--------------------------------------------------------------------\n")
 
@@ -87,16 +97,26 @@ try:
 
             print(*filesCATTOLICA_toParse, sep='\n')
 
+            newFilesFind = False
+
             if(filesCATTOLICA_toParse == []):
                 print("Nessun file di CATTOLICA da analizzare.\n")
+            else:
+                newFilesFind = True
 
-            # fileName_CATTOLICA = input("Inserire nome completo del file CATTOLICA con estensione: ")
+            startTime_Parsing = time.time()
+
             for i in range(0, len(filesCATTOLICA_toParse)):
                 pathName_CATTOLICA = current_working_directory + partialDir_filesCATTOLICA + '\\' + filesCATTOLICA_toParse[i]
-
-                # print("\nPercorso completo del file: ", pathName_CATTOLICA)
-
                 readFromCattolica(filesCATTOLICA_toParse[i], pathName_CATTOLICA, finalPathName, totale_sospesi_nuovi)
+                print("--------------------------------------------------------------------\n")
+
+            endTime_Parsing = time.time()
+            executionTime_Parsing = endTime_Parsing - startTime_Parsing
+
+            if(newFilesFind == True):
+                print("--------------------------------------------------------------------\n")
+                print("Tempo di esecuzione di tutti i files CATTOLICA = ", int(executionTime_Parsing), " secondi.\n")
 
             print("--------------------------------------------------------------------\n")
 
@@ -111,14 +131,27 @@ try:
 
             print(*filesTUTELA_toParse, sep='\n')
 
+            newFilesFind = False
+
             if(filesTUTELA_toParse == []):
                 print("Nessun file di TUTELA LEGALE da analizzare.\n")
+            else:
+                newFilesFind = True
+
+            startTime_Parsing = time.time()
 
             # fileName_TUTELA = input("Inserire nome completo del file TUTELA con estensione: ")
             for i in range(0, len(filesTUTELA_toParse)):
                 pathName_TUTELA = current_working_directory + partialDir_filesTUTELA + '\\' + filesTUTELA_toParse[i]
-
                 readFromTutela(filesTUTELA_toParse[i], pathName_TUTELA, finalPathName, totale_sospesi_nuovi)
+                print("--------------------------------------------------------------------\n")
+
+            endTime_Parsing = time.time()
+            executionTime_Parsing = endTime_Parsing - startTime_Parsing
+
+            if(newFilesFind == True):
+                print("--------------------------------------------------------------------\n")
+                print("Tempo di esecuzione di tutti i files TUTELA LEGALE = ", int(executionTime_Parsing), " secondi.\n")
 
             print("--------------------------------------------------------------------\n")
 

@@ -2,6 +2,7 @@ import pandas as pd
 import datetime
 import os
 import calendar
+import time
 
 sheetNamePrimaNota = "PRIMA NOTA"
 dateFormat = "%d/%m/%Y"
@@ -32,7 +33,7 @@ def getAgencyFromSubagent():
 #   -----------------------------------------------------------------------------------------
 #   -----------------------------------------------------------------------------------------
 # Funzione per trovare l'AGENZIA a cui fa riferimento un SUBAGENTE il cui Nome Cognome viene passato in input
-def findAgencyFromSubagent(subagentName):
+def findAgencyFromSubagent(subagentName, fileName):
     NOME = int(0)
     AGENZIA = int(1)
 
@@ -40,11 +41,11 @@ def findAgencyFromSubagent(subagentName):
 
     for i in range(0, len(subagentAgency)):
         if(isinstance(subagentName, str) == False): # Se non e' una stringa, allora quel campo e' vuoto
-            return "Collaboratore non trovato"
+            raise Exception("Cella vuota nella colonna relativa al COLLABORATORE nel file: ", fileName, ". Inserire 'cognome' e 'nome' del COLLABORATORE prima di rieseguire il programma.\n")
         if(subagentName.upper().find(subagentAgency[i][NOME]) != -1):
             return subagentAgency[i][AGENZIA]
 
-    return "Collaboratore non presente in tabella."
+    return Exception("Collaboratore ", subagentName, " non presente nel file 'elenco_collaboratori_agenzia.xlsx: e' necessario aggiungerlo prima di rieseguire il programma.\n")
 
     
 #   -----------------------------------------------------------------------------------------
@@ -156,18 +157,18 @@ def writeSospesi_inPrimaNota(listSospesiNew, filePathnameToWrite):
 #   -----------------------------------------------------------------------------------------
 #   -----------------------------------------------------------------------------------------
 #   -----------------------------------------------------------------------------------------
-# Funzione utilizzata per convertire da stringa a 'datetime' il contenuto di una list di input
-def convertStringToDatetime(listToConvert, DATE_INDEX):
-    for i in range(0, len(listToConvert)):
+# Funzione utilizzata per convertire da stringa a 'datetime' il contenuto di una dataframe di input
+def convertStringToDatetime(dataframeToConvert, DATE_INDEX):
+    for i in range(0, len(dataframeToConvert)):
         # checking if format matches the date
         res = True
         
         # using try-except to check for truth value
         try:
-            if(isinstance(listToConvert.values[i][DATE_INDEX], str)):
-                res = bool(datetime.datetime.strptime(listToConvert.values[i][DATE_INDEX], dateFormat))
+            if(isinstance(dataframeToConvert.values[i][DATE_INDEX], str)):
+                res = bool(datetime.datetime.strptime(dataframeToConvert.values[i][DATE_INDEX], dateFormat))
                 if(res == True):
-                    listToConvert.values[i][DATE_INDEX] = datetime.datetime.strptime(listToConvert.values[i][DATE_INDEX], dateFormat)
+                    dataframeToConvert.values[i][DATE_INDEX] = datetime.datetime.strptime(dataframeToConvert.values[i][DATE_INDEX], dateFormat)
         except ValueError:
             res = False
 
@@ -228,6 +229,19 @@ def convertToFloat(importo):
 def findPrimaNotaRow_forIncassiProvvigioni(datareadPrimaNota, newDateTime):
     DATA = int(0)
 
+    # start_time = time.time()
+    # # convertStringToDatetime(datareadPrimaNota, DATA)
+    # listPrimaNota = datareadPrimaNota.values.tolist()
+    # dateIndex = listPrimaNota.index([newDateTime])
+    # ind = dateIndex - 1
+
+    # if(datareadPrimaNota.values[ind][DATA] != 'DATA'):          # listPrimaNota non contiene 'DATA' in quanto vengono trasformati solo i valori numerici
+    #     raise Exception("Scritta 'DATA' non trovata.\n")
+    
+    # end_time = time.time()
+    # print("Tempo di esecuzione .index() = ", (end_time - start_time), " secondi.\n")
+    # start_time = time.time()
+
     for i in range(0, len(datareadPrimaNota)):
         if(datareadPrimaNota.values[i][DATA] == 'DATA'):
             try:
@@ -241,6 +255,12 @@ def findPrimaNotaRow_forIncassiProvvigioni(datareadPrimaNota, newDateTime):
                     # ATTENZIONE: dateFromPrimaNota e dateFromSospesi devono essere entrambe del tipo datetime.datetime, altrimenti il confronto fallisce
                     # Potrei aggiungere un if con else in errore se type(dateFromPrimaNota) != type(dateFromSospesi)
                     if(dateFromPrimaNota == newDateTime):
+                        # if(ind != i):
+                        #     raise Exception("ind e i sono diverse.\n")
+                        
+                        # end_time = time.time()
+                        # print("Tempo di esecuzione for = ", (end_time - start_time), " secondi.\n")
+                        
                         return i   # i -> 'DATA'       i+1 -> es. '01/01/2024'     Devo quindi aggiungere un altro + 1 -> i+2
                         
                 else:

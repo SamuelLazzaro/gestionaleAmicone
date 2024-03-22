@@ -18,10 +18,12 @@ DATA_RIMBORSI       = int(0)
 IMPORTO_SOSPESI     = int(1)
 IMPORTO_RIMBORSI    = int(1)
 
-ROW_INDEX_TOT_GENERALI = int(2)
+ROW_INDEX_TOT_GENERALI  = int(2)
 ROW_INDEX_TOT_CATTOLICA = int(4)
-ROW_INDEX_TOT_TUTELA = int(6)
-ROW_INDEX_TOT_UCA = int(8)
+ROW_INDEX_TOT_TUTELA    = int(6)
+ROW_INDEX_TOT_UCA       = int(8)
+
+ROW_INDEX_TOT_DEPOSITO  = int(47)   # Numero da aggiungere al valore ottenuto tramite findPrimaNotaRow_forIncassiProvvigioni 
 
 dateFormat = "%d/%m/%Y"
 
@@ -50,7 +52,7 @@ def readFromGenerali(fileName_Generali, fileGenerali_read, fileToWrite, totale_s
 
     # A -> 0 : NUMERO POLIZZA
     # B -> 1 : ANAGRAFICA (CONTRAENTE)
-    # C -> 2 : DATA DI REGISTRAZIONE
+    # C -> 2 : DATA DI REGISTRAZIONE, TIPO
     # H -> 3 : MODALITA' PAGAMENTO
     # J -> 4 : IMPORTO
     # K -> 5 : COLLABORATORE
@@ -59,6 +61,7 @@ def readFromGenerali(fileName_Generali, fileGenerali_read, fileToWrite, totale_s
     NUM_POLIZZA = int(0)
     ANAGRAFICA = int(1)
     DATA_REGISTRAZIONE = int(2)
+    TIPO = int(2)
     MOD_PAGAMENTO = int(3)
     IMPORTO = int(4)
     COLLABORATORE = int(5)
@@ -90,6 +93,7 @@ def readFromGenerali(fileName_Generali, fileGenerali_read, fileToWrite, totale_s
 
     totale_incassi = 0
     totale_provvigioni = 0
+    totale_deposito = 0     # Tiene conto di tutti i movimenti che hanno nella colonna 'TIPO' la descrizione 'Deposito'
 
     # Data di registrazione
     dateToCompare = dataframe1.iat[0, DATA_REGISTRAZIONE]
@@ -122,7 +126,7 @@ def readFromGenerali(fileName_Generali, fileGenerali_read, fileToWrite, totale_s
             # ANTICIPO AGENTE: si INCASSI, si PROVVIGIONI
             # FINANZIAMENTO AL CONSUMO: no INCASSI, si PROVVIGIONI
             # REGOLAZIONE SU CONTO COMPENSO: no INCASSI, si PROVVIGIONI prendendo l'importo dell'INCASSO e cambiandolo di segno
-            # COMPENSAZIONE: normalmente ha sia importo_incasso sia importo_provvigione = 0.0
+            # COMPENSAZIONE: si INCASSI, si PROVVIGIONI
 
             if(dataframe1.iat[i, MOD_PAGAMENTO] == 'BONIFICO' or dataframe1.iat[i, MOD_PAGAMENTO] == 'CONTANTI' or dataframe1.iat[i, MOD_PAGAMENTO].find('ASSEGNO') != -1 or dataframe1.iat[i, MOD_PAGAMENTO] == 'ANTICIPO AGENTE'):
                 totale_incassi += importo_incasso
@@ -143,6 +147,10 @@ def readFromGenerali(fileName_Generali, fileGenerali_read, fileToWrite, totale_s
                 totale_provvigioni += (-importo_incasso)
             else:
                 raise Exception("\nTrovato un metodo di pagamento non convenzionale nel file di GENERALI.\n")
+
+            # Gestione di un movimento con 'TIPO' uguale a 'Deposito'
+            if(dataframe1.iat[i, TIPO] == 'Deposito' and importo_incasso >= 0.0):
+                totale_deposito += importo_versamento
 
             if(importo_versamento > 0.0):
                 if (dataframe1.iat[i, MOD_PAGAMENTO] == 'BONIFICO'):
@@ -182,7 +190,7 @@ def readFromGenerali(fileName_Generali, fileGenerali_read, fileToWrite, totale_s
                     sospesi_generali_anagrafica.append(dataframe1.iat[i, ANAGRAFICA])
                     sospesi_generali_metodo_pagamento.append(dataframe1.iat[i, MOD_PAGAMENTO])
                     sospesi_generali_importo.append(importo_versamento)
-                    agenzia = findAgencyFromSubagent(dataframe1.iat[i, COLLABORATORE])
+                    agenzia = findAgencyFromSubagent(dataframe1.iat[i, COLLABORATORE], fileName_Generali)
                     sospesi_generali_agenzia.append(agenzia)
                     sospesi_generali_compagnia.append('GENERALI')
                     sospesi_generali_collaboratore.append(dataframe1.iat[i, COLLABORATORE])
@@ -196,7 +204,7 @@ def readFromGenerali(fileName_Generali, fileGenerali_read, fileToWrite, totale_s
                     rimborsi_generali_anagrafica.append(dataframe1.iat[i, ANAGRAFICA])
                     rimborsi_generali_metodo_pagamento.append(dataframe1.iat[i, MOD_PAGAMENTO])
                     rimborsi_generali_importo.append(importo_versamento)
-                    agenzia = findAgencyFromSubagent(dataframe1.iat[i, COLLABORATORE])
+                    agenzia = findAgencyFromSubagent(dataframe1.iat[i, COLLABORATORE], fileName_Generali)
                     rimborsi_generali_agenzia.append(agenzia)
                     rimborsi_generali_compagnia.append('GENERALI')
                     rimborsi_generali_collaboratore.append(dataframe1.iat[i, COLLABORATORE])
@@ -226,6 +234,10 @@ def readFromGenerali(fileName_Generali, fileGenerali_read, fileToWrite, totale_s
     listIncassiProvvigioniGenerali.append(["Provvigioni GENERALI", totale_provvigioni])
 
     df_IncassiProvvigioniGenerali = pd.DataFrame(listIncassiProvvigioniGenerali)
+
+    # Creazione dataframe DEPOSITO
+    listDepositoGenerali = [["Totale 'Deposito' GENERALI", totale_deposito]]
+    df_DepositoGenerali = pd.DataFrame(listDepositoGenerali)
 
     # Lettura dati presenti nel file excel per i fogli sheetNameGenerali, sheetNameSospesi e sheetNamePrimaNota
     datareadBonifici = pd.read_excel(fileToWrite, sheet_name = sheetNameGenerali, usecols = 'A')
@@ -277,7 +289,8 @@ def readFromGenerali(fileName_Generali, fileGenerali_read, fileToWrite, totale_s
         df_SospesiGenerali.to_excel(writer, index = False, header = False, sheet_name = sheetNameSospesi, startrow = SospesiRowData+1, startcol = 0)
         df_RimborsiGenerali.to_excel(writer, index = False, header = False, sheet_name = sheetNameRimborsi, startrow = RimborsiRowData+1, startcol = 0)
         df_IncassiProvvigioniGenerali.to_excel(writer, index = False, header = False, sheet_name = sheetNamePrimaNota, startrow = PrimaNotaRowData+ROW_INDEX_TOT_GENERALI, startcol = 2)        # 2 -> 'C' : DESCRIZIONE
-
+        df_DepositoGenerali.to_excel(writer, index = False, header = False, sheet_name = sheetNamePrimaNota, startrow = PrimaNotaRowData+ROW_INDEX_TOT_DEPOSITO, startcol = 12)         # 12 -> 'M'
+    
     print("Copia dei dati del file ", fileName_Generali, " di GENERALI terminata.\n")
     
     #  Rinomino il file di cui ho appena salvato i dati con la desinenza '_checked'
@@ -412,7 +425,7 @@ def readFromCattolica(fileName_Cattolica, pathName_read, fileToWrite, totale_sos
                         sospesi_cattolica_agenzia.append(agenzia)
                         updateAgencyTotaleSospesi(totale_sospesi_nuovi, importo_versamento, agenzia)
                     else:
-                        agenzia = findAgencyFromSubagent(dataframe1.iat[i, COLLABORATORE])
+                        agenzia = findAgencyFromSubagent(dataframe1.iat[i, COLLABORATORE], fileName_Cattolica)
                         sospesi_cattolica_agenzia.append(agenzia)
                         updateAgencyTotaleSospesi(totale_sospesi_nuovi, importo_versamento, agenzia)
 
@@ -428,7 +441,7 @@ def readFromCattolica(fileName_Cattolica, pathName_read, fileToWrite, totale_sos
                     rimborsi_cattolica_importo.append(importo_versamento)
 
                     # Non puo' essere un 'Bonifico su CC di Direzione' con importo_versamento < 0.0
-                    agenzia = findAgencyFromSubagent(dataframe1.iat[i, COLLABORATORE])
+                    agenzia = findAgencyFromSubagent(dataframe1.iat[i, COLLABORATORE], fileName_Cattolica)
                     rimborsi_cattolica_agenzia.append(agenzia)
                     rimborsi_cattolica_compagnia.append('CATTOLICA')
                     rimborsi_cattolica_collaboratore.append(dataframe1.iat[i, COLLABORATORE])
@@ -760,9 +773,11 @@ def readFromTutela(fileName_Tutela, fileTutela_read, fileToWrite, totale_sospesi
 
     # In BonificiRowData ho gli indici delle righe in ordine crescente di data, ma in df_BonificiTutela i vari dati si trovano in ordine decrescente di data, per questo motivo faccio un reverse for loop in modo tale da partire a salvare i dati con data piu' recente (BonificiRowData[i] con i = len(BonificiRowData)) fino ad arrivare a quelli con data meno recente (BonificiRowData[i] con i = 0)
 
-    # Salvataggio dati in BONIFICI TUTELA
-    if(len(BonificiRowData[0]) > 0):
+    # Salvataggio dati nel file 'PRIMA_NOTA_TEST_.xlsx'
+    if(len(BonificiRowData[0]) > 0 or len(SospesiRowData[0]) > 0 or len(RimborsiRowData[0]) > 0 or len(PrimaNotaRowData) > 0):
         with pd.ExcelWriter(fileToWrite, engine ="openpyxl", mode='a', if_sheet_exists='overlay') as writer:
+        
+            # Salvataggio dati in BONIFICI TUTELA
             for i in range(len(BonificiRowData[0])-1, -1, -1):
 
                 final_listTutela = []
@@ -775,9 +790,7 @@ def readFromTutela(fileName_Tutela, fileTutela_read, fileToWrite, totale_sospesi
                 final_dfTutela.to_excel(writer, index = False, header = False, sheet_name = sheetNameTutela, startrow = BonificiRowData[0][i] + 1, startcol = 1)
 
 
-    # Salvataggio dati in SOSPESI
-    if(len(SospesiRowData[0]) > 0):
-        with pd.ExcelWriter(fileToWrite, engine ="openpyxl", mode='a', if_sheet_exists='overlay') as writer:
+            # Salvataggio dati in SOSPESI
             for i in range(len(SospesiRowData[0])-1, -1, -1):
 
                 final_listSospesi = []
@@ -798,9 +811,7 @@ def readFromTutela(fileName_Tutela, fileTutela_read, fileToWrite, totale_sospesi
                 final_dfSospesi.to_excel(writer, index = False, header = False, sheet_name = sheetNameSospesi, startrow = SospesiRowData[0][i] + 1, startcol = 0)
 
 
-    # Salvataggio dati in RIMBORSI
-    if(len(RimborsiRowData[0]) > 0):
-        with pd.ExcelWriter(fileToWrite, engine ="openpyxl", mode='a', if_sheet_exists='overlay') as writer:
+            # Salvataggio dati in RIMBORSI
             for i in range(len(RimborsiRowData[0])-1, -1, -1):
 
                 final_listRimborsi = []
@@ -821,14 +832,13 @@ def readFromTutela(fileName_Tutela, fileTutela_read, fileToWrite, totale_sospesi
                 final_dfRimborsi.to_excel(writer, index = False, header = False, sheet_name = sheetNameRimborsi, startrow = RimborsiRowData[0][i] + 1, startcol = 0)
 
 
-    # Salvataggio TOTALE INCASSI e PROVVIGIONI TUTELA LEGALE nel foglio 'PRIMA NOTA'
-    with pd.ExcelWriter(fileToWrite, engine ="openpyxl", mode='a', if_sheet_exists='overlay') as writer:
-        for i in range(len(PrimaNotaRowData)-1, -1, -1):
-            listIncassiProvvigioniTutela = [["Incassi TUTELA LEGALE", totale_IncassiProvvigioni[i][TOT_INCASSI]]]
-            listIncassiProvvigioniTutela.append(["Provvigioni TUTELA LEGALE", totale_IncassiProvvigioni[i][TOT_PROVVIGIONI]])
-            
-            df_IncassiProvvigioniTutela = pd.DataFrame(listIncassiProvvigioniTutela)
-            df_IncassiProvvigioniTutela.to_excel(writer, index = False, header = False, sheet_name = sheetNamePrimaNota, startrow = PrimaNotaRowData[i]+ROW_INDEX_TOT_TUTELA, startcol = 2)
+            # Salvataggio TOTALE INCASSI e PROVVIGIONI TUTELA LEGALE nel foglio 'PRIMA NOTA'
+            for i in range(len(PrimaNotaRowData)-1, -1, -1):
+                listIncassiProvvigioniTutela = [["Incassi TUTELA LEGALE", totale_IncassiProvvigioni[i][TOT_INCASSI]]]
+                listIncassiProvvigioniTutela.append(["Provvigioni TUTELA LEGALE", totale_IncassiProvvigioni[i][TOT_PROVVIGIONI]])
+                
+                df_IncassiProvvigioniTutela = pd.DataFrame(listIncassiProvvigioniTutela)
+                df_IncassiProvvigioniTutela.to_excel(writer, index = False, header = False, sheet_name = sheetNamePrimaNota, startrow = PrimaNotaRowData[i]+ROW_INDEX_TOT_TUTELA, startcol = 2)
 
             
     print("Copia dei dati del file ", fileName_Tutela, " di TUTELA LEGALE terminata.\n")
