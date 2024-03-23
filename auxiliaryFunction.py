@@ -45,7 +45,7 @@ def findAgencyFromSubagent(subagentName, fileName):
         if(subagentName.upper().find(subagentAgency[i][NOME]) != -1):
             return subagentAgency[i][AGENZIA]
 
-    return Exception("Collaboratore ", subagentName, " non presente nel file 'elenco_collaboratori_agenzia.xlsx: e' necessario aggiungerlo prima di rieseguire il programma.\n")
+    raise Exception("Collaboratore ", subagentName, " non presente nel file 'elenco_collaboratori_agenzia.xlsx: e' necessario aggiungerlo prima di rieseguire il programma.\n")
 
     
 #   -----------------------------------------------------------------------------------------
