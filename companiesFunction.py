@@ -281,6 +281,7 @@ def readFromGenerali(fileName_Generali, fileGenerali_read, fileToWrite, totale_s
 
     # Ricerca della riga nel foglio 'PRIMA NOTA' in cui andare a salvare i dati corrispondenti alla data newDateToCompare
     PrimaNotaRowData = findPrimaNotaRow_forIncassiProvvigioni(datareadPrimaNota, newDateToCompare)
+    nextDayRowData = findPrimaNotaRow_forIncassiProvvigioni(datareadPrimaNota, (newDateToCompare + datetime.timedelta(1)))
 
     print("Copia e salvataggio dei dati del file ", fileName_Generali, " di GENERALI in esecuzione, attendere ...\n")
 
@@ -289,7 +290,7 @@ def readFromGenerali(fileName_Generali, fileGenerali_read, fileToWrite, totale_s
         df_SospesiGenerali.to_excel(writer, index = False, header = False, sheet_name = sheetNameSospesi, startrow = SospesiRowData+1, startcol = 0)
         df_RimborsiGenerali.to_excel(writer, index = False, header = False, sheet_name = sheetNameRimborsi, startrow = RimborsiRowData+1, startcol = 0)
         df_IncassiProvvigioniGenerali.to_excel(writer, index = False, header = False, sheet_name = sheetNamePrimaNota, startrow = PrimaNotaRowData+ROW_INDEX_TOT_GENERALI, startcol = 2)        # 2 -> 'C' : DESCRIZIONE
-        df_DepositoGenerali.to_excel(writer, index = False, header = False, sheet_name = sheetNamePrimaNota, startrow = PrimaNotaRowData+ROW_INDEX_TOT_DEPOSITO, startcol = 12)         # 12 -> 'M'
+        df_DepositoGenerali.to_excel(writer, index = False, header = False, sheet_name = sheetNamePrimaNota, startrow = nextDayRowData+ROW_INDEX_TOT_DEPOSITO, startcol = 12)         # 12 -> 'M'
     
     print("Copia dei dati del file ", fileName_Generali, " di GENERALI terminata.\n")
     
